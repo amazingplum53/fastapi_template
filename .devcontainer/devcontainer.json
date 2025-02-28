@@ -2,6 +2,9 @@
   "name": "Python Dev Container",
   "dockerComposeFile": "compose.yml",
   "service": "dev",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
   "remoteUser": "root",
   "workspaceFolder": "/workspace/",
   "overrideCommand": true
