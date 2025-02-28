@@ -1,0 +1,15 @@
+
+services:
+  dev:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - server:/workspace/
+      
+  django-server:
+    build:
+      dockerfile: django-server.dockerfile
+    volumes:
+      - server:/server/
+
+volumes:
+  server:
