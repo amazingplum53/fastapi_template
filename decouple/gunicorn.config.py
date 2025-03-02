@@ -14,7 +14,7 @@ max_requests = 1000
 
 workers = max_workers()
 
-path.append("/var/www/portfolio")
+path.append("/workspace/decouple/")
 
 environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 

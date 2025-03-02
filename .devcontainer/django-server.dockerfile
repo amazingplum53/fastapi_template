@@ -9,4 +9,4 @@ WORKDIR $BASEDIR/decouple
 RUN pip install uv
 RUN uv pip install -r .devcontainer/requirements.txt --system
 
-CMD ["gunicorn", "portfolio.wsgi", "-c", "gunicorn.config.py"]
+CMD ["gunicorn", "portfolio.wsgi", "-c", "decouple/gunicorn.config.py"]
