@@ -20,3 +20,15 @@ jobs:
 
       - name: Run container to test
         run: docker run -d -p 8000:8000 --rm server:latest
+
+      - name: Wait for the server to be ready
+        run: |
+          echo "Waiting for server to start..."
+          until curl -s http://localhost:8000 > /dev/null; do
+            echo "Waiting for server..."
+            sleep 5
+          done
+          echo "Server is up!"
+
+      - name: Run tests (or further actions)
+        run: curl http://localhost:8000  
