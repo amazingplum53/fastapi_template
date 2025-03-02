@@ -4,3 +4,6 @@ ssh:
 
 django-shell:
 	docker exec -it server python3 manage.py shell
+
+server-logs:
+	docker logs --follow server
