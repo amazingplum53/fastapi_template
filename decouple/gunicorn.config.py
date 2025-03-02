@@ -2,9 +2,7 @@
 """gunicorn WSGI server configuration."""
 from multiprocessing import cpu_count
 from os import environ
-from subprocess import run
 from sys import path
-from json import load
 
 max_workers = cpu_count
 
