@@ -15,7 +15,7 @@ services:
     volumes:
       - server:/server/
     ports:
-      -8000:8000
+      - "8000:8000"
 
 volumes:
   server:
