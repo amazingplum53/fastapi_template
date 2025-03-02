@@ -16,7 +16,7 @@ jobs:
           driver: docker 
 
       - name: Build Docker image with a specific Dockerfile
-        run: docker build -t my-image:latest -f ./docker/example.dockerfile .
+        run: docker build -t server:latest -f ./.devcontainer/django-server.dockerfile
 
       - name: Run container to test
-        run: docker run --rm my-image:latest
+        run: docker run --rm server:latest
