@@ -2,6 +2,8 @@ FROM python:latest
 
 ENV BASEDIR="/server/" 
 
+RUN mkdir $BASEDIR
+
 RUN git clone https://github.com/amazingplum53/decouple_test.git $BASEDIR/decouple/
 
 WORKDIR $BASEDIR/decouple
