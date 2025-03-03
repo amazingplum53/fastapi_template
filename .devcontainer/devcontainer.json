@@ -8,6 +8,9 @@
   },
   "remoteUser": "root",
   "workspaceFolder": "/workspace/",
-  "overrideCommand": true
+  "overrideCommand": true,
+  "mounts": [
+    "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached"
+  ]
 }
   
