@@ -12,7 +12,7 @@
     "secrets": [
       {
         "id": ".env",
-        "src": ".env"
+        "src": ".devcontainer/.env"
       }
     ]
   }
