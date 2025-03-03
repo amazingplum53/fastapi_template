@@ -5,6 +5,15 @@
   "remoteUser": "root",
   "workspaceFolder": "/workspace/",
   "overrideCommand": true,
-  "envFile": ".env"
+  "build": {
+    "args": {
+      "BUILD_KIT_ENABLED": "1"
+    },
+    "secrets": [
+      {
+        "id": ".env",
+        "src": ".env"
+      }
+    ]
+  }
 }
-  
