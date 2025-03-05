@@ -5,15 +5,7 @@
   "remoteUser": "root",
   "workspaceFolder": "/workspace/",
   "overrideCommand": true,
-  "build": {
-    "args": {
-      "BUILD_KIT_ENABLED": "1"
-    },
-    "secrets": [
-      {
-        "id": ".env",
-        "src": ".env"
-      }
-    ]
-  }
+  "mounts": [
+    "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached"
+  ]
 }
