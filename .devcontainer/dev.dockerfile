@@ -12,4 +12,3 @@ ENV PATH="/root/.pulumi/bin:${PATH}"
 RUN git --version && pip --version && docker --version && pulumi version && aws --version 
 
 RUN pip install uv
-RUN uv pip install -r /workspace/decouple/.devcontainer/dev.requirements.txt --system

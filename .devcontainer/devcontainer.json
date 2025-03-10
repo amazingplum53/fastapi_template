@@ -7,5 +7,6 @@
   "overrideCommand": true,
   "mounts": [
     "source=C://Users//Matthew//.aws,target=/root/.aws,type=bind,consistency=cached"
-  ]
+  ],
+  "postCreateCommand": "uv pip install -r /workspace/decouple/.devcontainer/dev.requirements.txt --system"
 }
