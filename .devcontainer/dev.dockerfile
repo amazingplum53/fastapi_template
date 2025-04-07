@@ -10,6 +10,9 @@ ENV PATH="/root/.pulumi/bin:${PATH}"
 
 # Verify packages are installed correctly
 RUN git --version && pip --version && docker --version && pulumi version && aws --version 
+
 RUN git config --global core.autocrlf input
+RUN git config --global user.name "Matthew"
+RUN git config --global user.email "matthewpaulh@hotmail.co.uk"
 
 RUN pip install uv
