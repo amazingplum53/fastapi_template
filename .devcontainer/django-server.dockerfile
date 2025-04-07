@@ -8,10 +8,10 @@ WORKDIR $BASEDIR/decouple
 
 COPY . .
 
-RUN echo | ls
-
 RUN pip install uv
 
 RUN uv pip install -r .devcontainer/server.requirements.txt --system
 
-CMD [".devcontainer/setup_container.sh" "&&" "gunicorn", "decouple.wsgi", "-c", "decouple/gunicorn.config.py"]
+CMD ["gunicorn", "decouple.wsgi", "-c", "decouple/gunicorn.config.py"]
+
+#".devcontainer/setup_container.sh" "&&" 
