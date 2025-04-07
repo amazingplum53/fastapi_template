@@ -6,7 +6,9 @@ RUN mkdir $BASEDIR $BASEDIR/decouple
 
 WORKDIR $BASEDIR/decouple
 
-COPY . .
+COPY .. .
+
+RUN echo | ls
 
 RUN pip install uv
 
