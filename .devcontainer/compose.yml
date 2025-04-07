@@ -14,7 +14,7 @@ services:
   django-server:
     container_name: server
     build:
-      dockerfile: django-server.dockerfile
+      dockerfile: .devcontainer/django-server.dockerfile
       context: ./..
     volumes:
       - server:/server/
