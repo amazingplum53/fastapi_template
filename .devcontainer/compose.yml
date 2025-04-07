@@ -15,7 +15,7 @@ services:
     container_name: server
     build:
       dockerfile: django-server.dockerfile
-      context: .
+      context: ./..
     volumes:
       - server:/server/
     ports:
