@@ -3,7 +3,10 @@
 from multiprocessing import cpu_count
 from os import environ, path
 from sys import path
-from secret_keys import get_secret, create_secret_file, load_secrets_file, SECRETS_FILE_NAME, FILE_PATH
+
+path.append("/server/decouple/")
+
+from decouple.secret_keys import get_secret, create_secret_file, load_secrets_file, SECRETS_FILE_NAME, FILE_PATH
 
 max_workers = cpu_count
 
@@ -12,8 +15,6 @@ bind = '0.0.0.0:' + environ.get('PORT', '8000')
 max_requests = 1000
 
 workers = max_workers()
-
-path.append("/server/decouple/")
 
 environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 
