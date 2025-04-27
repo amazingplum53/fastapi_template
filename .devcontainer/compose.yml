@@ -7,6 +7,7 @@ services:
     volumes:
       - server:/workspace/
       - /var/run/docker.sock:/var/run/docker.sock 
+      - /root/.aws:/root/.aws:ro
     privileged: true
     depends_on: 
       - django-server
@@ -18,6 +19,7 @@ services:
       context: ./..
     volumes:
       - server:/server/
+      - /root/.aws:/root/.aws:ro
     ports:
       - "8000:8000"
     restart: always

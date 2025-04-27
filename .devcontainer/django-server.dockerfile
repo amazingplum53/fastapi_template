@@ -13,5 +13,3 @@ RUN pip install uv
 RUN uv pip install -r .devcontainer/server.requirements.txt --system
 
 CMD ["gunicorn", "decouple.wsgi", "-c", "decouple/gunicorn.config.py"]
-
-#".devcontainer/setup_container.sh" "&&" 

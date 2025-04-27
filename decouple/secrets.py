@@ -1,8 +1,14 @@
 import boto3
 from botocore.exceptions import ClientError
 import json
+from os import environ
 
-def get_secret(secret_name: str) -> str:
+SECRETS_FILE_NAME = "secrets.env"
+AWS_SECRET_NAME = "prod-secrets"
+FILE_PATH = "/server/decouple/decouple"
+
+
+def get_secret(secret_name: str = AWS_SECRET_NAME) -> str:
     """Fetch a secret from AWS Secrets Manager."""
     region_name = "eu-west-2"
 
@@ -23,13 +29,16 @@ def get_secret(secret_name: str) -> str:
 
     secret = get_secret_value_response.get('SecretString', None)
 
+    print(secret)
+
     if not secret:
         print("No secret found or it's binary data.")
         return None
 
     return secret
 
-def create_secret_file(secret_json: str):
+
+def create_secret_file(secret_json: str, file_name: str = SECRETS_FILE_NAME):
     """Write secrets to a .env file."""
     try:
         secrets = json.loads(secret_json)  # Ensure the secret is a JSON object
@@ -37,11 +46,33 @@ def create_secret_file(secret_json: str):
         print("Secret is not a valid JSON string.")
         return
 
-    with open("secrets.env", "w") as f:  # Open in write mode
-        for key, value in secrets.items():  # Use .items() to iterate correctly
-            f.write(f"{key}={value}\n")  # Write each key-value pair
+    with open(f"{FILE_PATH}/{file_name}", 'w') as f:
+        json.dump(secrets, f, indent=4)
+
+
+def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
+
+    try:
+        secrets = ""
+
+        with open(f"{FILE_PATH}/{file_name}", "r") as f:
+            secrets = json.loads(f.read())
+
+    except json.JSONDecodeError:
+        print("Secret is not a valid JSON string.")
+        return  
+
+    for key, value in secrets.items():
+        environ[key] = value
+
 
 if __name__ == "__main__":
-    json_secrets = get_secret("prod-secrets")
-    if json_secrets:  # Ensure the secret was retrieved
-        create_secret_file(json_secrets)
+
+    json_secrets = get_secret(AWS_SECRET_NAME)
+
+    create_secret_file(json_secrets)
+
+    load_secrets_file()
+
+    print(environ.get("pulumi_access_token"))
+    
