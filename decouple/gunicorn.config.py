@@ -3,7 +3,7 @@
 from multiprocessing import cpu_count
 from os import environ, path
 from sys import path
-from load_secrets import get_secret, create_secret_file, load_secrets_file, SECRETS_FILE_NAME, FILE_PATH
+from secrets import get_secret, create_secret_file, load_secrets_file, SECRETS_FILE_NAME, FILE_PATH
 
 max_workers = cpu_count
 
