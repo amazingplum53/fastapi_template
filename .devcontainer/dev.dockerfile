@@ -18,4 +18,4 @@ RUN pip install uv
 
 RUN uv pip install -r dev.requirements.txt --system
 
-WORKDIR ./decouple
+WORKDIR /workspace/decouple
