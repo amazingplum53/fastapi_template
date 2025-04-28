@@ -4,6 +4,7 @@ runtime:
   name: python
   options:
     toolchain: uv
+    python: /usr/local/bin/python
 config:
   pulumi:tags:
     value:
