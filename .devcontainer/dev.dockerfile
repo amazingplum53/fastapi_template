@@ -16,4 +16,6 @@ RUN git config --global user.email "matthewpaulh@hotmail.co.uk"
 
 RUN pip install uv
 
+RUN uv pip install -r dev.requirements.txt --system
+
 WORKDIR ./decouple
