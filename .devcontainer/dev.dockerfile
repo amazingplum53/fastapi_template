@@ -1,5 +1,7 @@
 FROM python:latest
 
+WORKDIR /workspace/decouple/
+
 RUN apt-get update
 
 RUN apt-get install -y curl git docker.io awscli 
@@ -16,6 +18,4 @@ RUN git config --global user.email "matthewpaulh@hotmail.co.uk"
 
 RUN pip install uv
 
-RUN uv pip install -r dev.requirements.txt --system
-
-WORKDIR /workspace/decouple
+RUN uv pip install -r .devcontainer/dev.dockerfile --system
