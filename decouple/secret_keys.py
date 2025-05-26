@@ -29,8 +29,6 @@ def get_secret(secret_name: str = AWS_SECRET_NAME) -> str:
 
     secret = get_secret_value_response.get('SecretString', None)
 
-    print(secret)
-
     if not secret:
         print("No secret found or it's binary data.")
         return None

@@ -20,7 +20,7 @@ services:
       context: ./..
     volumes:
       - server:/server/
-      - /root/.aws:/root/.aws:ro
+      - ${HOME}/.aws:/root/.aws:ro
     ports:
       - "8000:8000"
     restart: always
