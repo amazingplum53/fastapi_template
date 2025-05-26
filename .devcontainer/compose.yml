@@ -7,8 +7,6 @@ services:
       context: .
     volumes:
       - server:/workspace/
-      - /var/run/docker.sock:/var/run/docker.sock 
-      - /root/.aws:/root/.aws:ro
     privileged: true
     depends_on: 
       - django-server
