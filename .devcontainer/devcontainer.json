@@ -3,7 +3,7 @@
   "dockerComposeFile": "compose.yml",
   "service": "dev",
   "remoteUser": "root",
-  "workspaceFolder": "/workspace/",
+  "workspaceFolder": "/workspace/decouple/",
   "overrideCommand": true,
   "mounts": [
     "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached"
