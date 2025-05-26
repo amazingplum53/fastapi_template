@@ -20,7 +20,6 @@ environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 preload_app = True
 
 def on_starting(server):
-    return
 
     if not path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}"): 
         secrets = get_secret()
