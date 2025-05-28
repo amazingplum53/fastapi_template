@@ -4,7 +4,7 @@ WORKDIR /workspace/decouple/
 
 RUN apt-get update
 
-RUN apt-get install -y curl git docker.io awscli 
+RUN apt-get install -y curl git docker.io awscli less
 
 RUN curl -fsSL https://get.pulumi.com | sh
 
