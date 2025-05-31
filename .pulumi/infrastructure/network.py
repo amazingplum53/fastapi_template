@@ -4,9 +4,11 @@ import pulumi
 DOMAIN_NAME = "matthewhill.click"
 
 hosted_zone = aws.route53.get_zone(name=DOMAIN_NAME)
+vpc = aws.ec2.get_vpc(default=True)
+subnets = aws.ec2.get_subnets(filters=[{"name": "vpc-id", "values": [vpc.id]}])
 
 
-def cdn_alias_record(stage: str, cdn: aws.cloudfront.Distribution) -> aws.route53.Record:
+def cdn_alias_record(stage: str, cdn: aws.cloudfront.Distribution, hosted_zone) -> aws.route53.Record:
 
     record = aws.route53.Record(
         "cdnAliasRecord",
@@ -22,7 +24,7 @@ def cdn_alias_record(stage: str, cdn: aws.cloudfront.Distribution) -> aws.route5
     return record
 
 
-def certificate(stage) -> aws.acm.Certificate:
+def certificate(stage: str) -> aws.acm.Certificate:
     # Create AWS provider for us-east-1 region (required by ACM)
     us_east_1_provider = aws.Provider("usEast1", region="us-east-1")
 
@@ -57,4 +59,44 @@ def certificate(stage) -> aws.acm.Certificate:
     pulumi.export("CertificateValidation", cert_validation.id)
 
     return cert
+
+
+def alb(stage: str, subnets: list[str]) -> tuple:
+    alb = aws.lb.LoadBalancer(f"{stage}-alb",
+        internal=False,
+        load_balancer_type="application",
+        security_groups=[],  # Add SG IDs here
+        subnets=subnets,
+    )
+
+    target_group = aws.lb.TargetGroup(f"{stage}-tg",
+        port=8000,
+        protocol="HTTP",
+        target_type="ip",
+        vpc_id=vpc.id,
+        health_check={
+            "path": "/health",
+            "interval": 30,
+            "timeout": 5,
+            "healthy_threshold": 2,
+            "unhealthy_threshold": 2,
+        }
+    )
+
+    listener = aws.lb.Listener(f"{stage}-listener",
+        load_balancer_arn=alb.arn,
+        port=80,
+        default_actions=[{
+            "type": "forward",
+            "target_group_arn": target_group.arn,
+        }],
+    )
+
+    pulumi.export(f"{stage}_alb_dns", alb.dns_name)
+
+    return (
+        alb,
+        target_group,
+        listener,
+    )
 
