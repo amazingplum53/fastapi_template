@@ -24,5 +24,8 @@ jobs:
         with:
           driver: docker 
       
-      - name: Basic health check
+      - name: Start containers
         run: docker compose -f .devcontainer/compose.yml up --detach --wait-timeout 10
+
+      - name: Health Check
+        run: curl https://localhost:8000
