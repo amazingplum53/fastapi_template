@@ -9,8 +9,6 @@ services:
       - server:/workspace/
       - ${HOME}/.aws:/root/.aws:ro
     privileged: true
-    depends_on: 
-      - django-server
 
   django-server:
     container_name: server
