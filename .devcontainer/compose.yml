@@ -1,12 +1,14 @@
 
 services:
   dev:
+    image: dev:latest
     container_name: dev
     build:
       dockerfile: dev.dockerfile
       context: .
     volumes:
       - server:/workspace/
+      - ${HOME}/.aws:/root/.aws:ro
     privileged: true
     depends_on: 
       - django-server

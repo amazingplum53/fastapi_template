@@ -2,11 +2,5 @@
   "name": "Python Dev Container",
   "dockerComposeFile": "compose.yml",
   "service": "dev",
-  "remoteUser": "root",
-  "workspaceFolder": "/workspace/decouple/",
-  "overrideCommand": true,
-  "mounts": [
-    "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached",
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ]
+  "remoteUser": "root"
 }
