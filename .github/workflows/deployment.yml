@@ -28,4 +28,4 @@ jobs:
         run: docker compose -f .devcontainer/compose.yml up --detach --wait-timeout 10
 
       - name: Health Check
-        run: curl https://localhost:8000
+        run: curl http://localhost:8000
