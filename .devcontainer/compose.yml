@@ -1,7 +1,6 @@
 
 services:
   dev:
-    image: dev:latest
     container_name: dev
     build:
       dockerfile: dev.dockerfile
