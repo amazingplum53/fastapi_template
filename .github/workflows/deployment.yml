@@ -25,7 +25,10 @@ jobs:
           driver: docker 
       
       - name: Start containers
-        run: docker compose -f .devcontainer/compose.yml up --detach --wait-timeout 10
+        run: docker build -t server:latest -f .devcontainer/django-server.dockerfile .
+
+      - name: Start containers
+        run: docker container start server
 
       - name: Health Check
         run: curl http://localhost:8000
