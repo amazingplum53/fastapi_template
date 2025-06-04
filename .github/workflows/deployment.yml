@@ -21,8 +21,8 @@ jobs:
         with:
           driver: docker 
 
-      - name: Start devcontainer
+      - name: Build containers
         uses: devcontainers/ci@v0.3
       
       - name: Basic health check
-        run: docker compose up -f .devcontainer/compose.yml --wait-timeout 10
+        run: docker compose -f .devcontainer/compose.yml up --detach --wait-timeout 10
