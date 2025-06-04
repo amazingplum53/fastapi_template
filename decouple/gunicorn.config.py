@@ -22,8 +22,11 @@ preload_app = True
 def on_starting(server):
 
     if not path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}"): 
-        secrets = get_secret()
-        create_secret_file(secrets)
-        load_secrets_file()
+        try:
+            secrets = get_secret()
+            create_secret_file(secrets)
+            load_secrets_file()
+        except Exception as e:
+            print("secrets not loaded:" + str(e))
     else:
         load_secrets_file()
