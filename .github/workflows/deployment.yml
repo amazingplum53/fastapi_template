@@ -23,9 +23,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker 
-
-      - name: Build containers
-        uses: devcontainers/ci@v0.3
       
       - name: Basic health check
         run: docker compose -f .devcontainer/compose.yml up --detach --wait-timeout 10

@@ -4,10 +4,5 @@
   "service": "dev",
   "remoteUser": "root",
   "workspaceFolder": "/workspace/decouple/",
-  "overrideCommand": true,
-  "mounts": [
-    "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached",
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ],
-  "postCreateCommand": "uv pip install -r /workspace/decouple/.devcontainer/dev.requirements.txt --system"
+  "overrideCommand": true
 }
