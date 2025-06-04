@@ -18,3 +18,5 @@ RUN git config --global user.email "matthewpaulh@hotmail.co.uk"
 
 RUN pip install uv
 
+RUN uv pip install -r /workspace/decouple/.devcontainer/dev.requirements.txt --system
+
