@@ -4,5 +4,5 @@
   "service": "dev",
   "remoteUser": "root",
   "workspaceFolder": "/workspace/decouple/",
-  "overrideCommand": false
+  "overrideCommand": true
 }
