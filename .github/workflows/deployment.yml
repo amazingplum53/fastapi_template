@@ -1,5 +1,5 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Deploy
+run-name: ${{ github.actor }} deploy
 on: [push]
 jobs:
   deploy:
@@ -21,8 +21,8 @@ jobs:
         with:
           driver: docker 
 
-      - name: Build Docker image with a specific Dockerfile
-        run: docker compose up -d
+      - name: Start devcontainer
+        uses: devcontainers/ci@v0.3
 
       - name: Wait for the server to be ready
         run: |
