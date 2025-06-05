@@ -25,10 +25,7 @@ jobs:
           driver: docker 
       
       - name: Start containers
-        run: docker build -t server:latest -f .devcontainer/django-server.dockerfile .
-
-      - name: Start containers
-        run: docker run -d --name server -p 8000:8000 server:latest
+        run: docker compose -f .devcontainer/compose.yml up --detach --wait
 
       - name: Health Check
         run: curl http://localhost:8000
