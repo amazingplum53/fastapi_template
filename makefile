@@ -11,3 +11,9 @@ logs:
 restart:
 	docker restart server
 
+deploy:
+	pulumi up --cwd ./.pulumi/
+
+destroy:
+	pulumi destroy --cwd ./.pulumi/
+
