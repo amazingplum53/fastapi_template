@@ -1,71 +1,143 @@
 import pulumi
 import pulumi_aws as aws
 import json
+from pulumi import Output
+from typing import List, Dict
 
 
 def ecs(
     stage: str,
     cluster: aws.ecs.Cluster,
-    subnets: list[str],
+    subnets: List[str],
     target_group: aws.lb.TargetGroup,
-    ecr_image: str,
-    env_vars: list[dict] = [],
-) -> dict:
+    ecr_image: pulumi.Input[str],
+    env_vars: List[Dict[str, pulumi.Input[str]]] = [],
+) -> Dict[str, pulumi.Resource]:
 
-    # Task execution role
-    task_execution_role = aws.iam.Role(f"{stage}-exec-role",
+    # 1) Task execution IAM Role
+    task_execution_role = aws.iam.Role(
+        f"{stage}-exec-role",
         assume_role_policy=aws.iam.get_policy_document(
             statements=[{
                 "actions": ["sts:AssumeRole"],
-                "principals": [{"type": "Service", "identifiers": ["ecs-tasks.amazonaws.com"]}],
+                "principals": [{
+                    "type": "Service",
+                    "identifiers": ["ecs-tasks.amazonaws.com"],
+                }],
+                "effect": "Allow",
+                "sid": "",
             }]
         ).json,
     )
 
-    aws.iam.RolePolicyAttachment(f"{stage}-exec-attach",
+    aws.iam.RolePolicyAttachment(
+        f"{stage}-exec-attach",
         role=task_execution_role.name,
         policy_arn="arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     )
 
-    # Task Definition
-    task_definition = aws.ecs.TaskDefinition(f"{stage}-task-def",
-        family=f"{stage}-family",
-        cpu="512",
-        memory="1024",
-        network_mode="awsvpc",
-        requires_compatibilities=["FARGATE"],
-        execution_role_arn=task_execution_role.arn,
-        container_definitions=pulumi.Output.all().apply(
-            lambda _: json.dumps([{
-                "name": stage,
-                "image": ecr_image,
-                "portMappings": [{"containerPort": 8000}],
-                "essential": True,
-                "environment": env_vars,
-            }])
+    # 2) Prepare to assemble container_definitions without embedding any raw Output into json.dumps()
+    #    We know ecr_image: Input[str] and env_vars[i]["value"]: Input[str].
+    #
+    #    Extract all of the "value" fields from env_vars. These may be plain str or Output[str].
+    env_values: List[pulumi.Input[str]] = [v["value"] for v in env_vars]
+
+    #    Build a single Output that waits for ecr_image + all env_values to resolve to plain strings:
+    all_inputs = Output.all(ecr_image, *env_values)
+
+    container_defs = all_inputs.apply(lambda args: json.dumps([{
+        "name": stage,
+        "image": args[0],  # resolved ecr_image string
+        "portMappings": [
+            {"containerPort": 8000}
+        ],
+        "essential": True,
+        "environment": [
+            {
+                "name": env_vars[i]["name"],
+                "value": args[i + 1],  # resolved value for each env var
+            }
+            for i in range(len(env_vars))
+        ],
+        # You can add "logConfiguration", "healthCheck", etc., here if needed
+    }]))
+
+    # 3) Task Definition
+    task_definition = aws.ecs.TaskDefinition(
+        f"{stage}-task-def",
+        family                   = f"{stage}-family",
+        cpu                      = "512",
+        memory                   = "1024",
+        network_mode             = "awsvpc",
+        requires_compatibilities = ["FARGATE"],
+        execution_role_arn       = task_execution_role.arn,
+        container_definitions    = container_defs,  # Output[str] of the JSON array above
+    )
+
+    # 4) ECS Service, using Fargate and the provided ALB Target Group
+    service = aws.ecs.Service(
+        f"{stage}-service",
+        cluster         = cluster.arn,
+        task_definition = task_definition.arn,
+        desired_count   = 1,
+        launch_type     = "FARGATE",
+        network_configuration=aws.ecs.ServiceNetworkConfigurationArgs(
+            assign_public_ip = True,
+            subnets          = subnets,
+            security_groups  = [],  # If you have a SG, put its ID here instead of an empty list
         ),
+        load_balancers=[aws.ecs.ServiceLoadBalancerArgs(
+            target_group_arn = target_group.arn,
+            container_name   = stage,
+            container_port   = 8000,
+        )],
+        opts=pulumi.ResourceOptions(depends_on=[task_definition]),
     )
 
-    # ECS Service
-    service = aws.ecs.Service(f"{stage}-service",
-        cluster=cluster.arn,
-        task_definition=task_definition.arn,
-        desired_count=1,
-        launch_type="FARGATE",
-        network_configuration={
-            "assign_public_ip": True,
-            "subnets": subnets,
-            "security_groups": [],  # Add SG IDs here
-        },
-        load_balancers=[{
-            "target_group_arn": target_group.arn,
-            "container_name": stage,
-            "container_port": 8000,
-        }],
-    )
-
+    # 5) Return a dict of resources in case callers want them
     return {
-        "service": service,
-        "task_definition": task_definition,
         "task_execution_role": task_execution_role,
+        "task_definition":     task_definition,
+        "service":             service,
     }
+
+
+def ecr(stage, repo_name):
+
+    repo = aws.ecr.Repository(
+        f"{stage}-{repo_name}",
+        name = f"{stage}-{repo_name}",
+
+        image_scanning_configuration = aws.ecr.RepositoryImageScanningConfigurationArgs(
+            scan_on_push = True,
+        ),
+        tags = {
+            "Environment": stage,
+            "Name":        f"{stage}-{repo_name}",
+        }
+    )
+
+    lifecycle_policy_json = json.dumps({
+        "rules": [
+            {
+                "rulePriority":       1,
+                "description":        "Keep only last 10 images",
+                "selection": {
+                    "tagStatus":      "any",
+                    "countType":      "imageCountMoreThan",
+                    "countNumber":    10
+                },
+                "action": {
+                    "type": "expire"
+                }
+            }
+        ]
+    })
+
+    lifecycle = aws.ecr.LifecyclePolicy(
+        f"{stage}-{repo_name}-lifecycle",
+        repository = repo.name,         # e.g. "prod-decouple"
+        policy     = lifecycle_policy_json,
+    )
+
+    return repo

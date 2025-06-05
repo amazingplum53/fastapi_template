@@ -3,12 +3,22 @@ import pulumi
 
 DOMAIN_NAME = "matthewhill.click"
 
-hosted_zone = aws.route53.get_zone(name=DOMAIN_NAME)
-vpc = aws.ec2.get_vpc(default=True)
-subnets = aws.ec2.get_subnets(filters=[{"name": "vpc-id", "values": [vpc.id]}])
+
+def subnet_ids(stage):
+
+    lookup = aws.ec2.get_subnets_output(
+        filters=[aws.ec2.GetSubnetsFilterArgs(
+            name   = "tag:Stage",
+            values = [stage],
+        )]
+    )
+
+    return lookup.ids
 
 
-def cdn_alias_record(stage: str, cdn: aws.cloudfront.Distribution, hosted_zone) -> aws.route53.Record:
+def cdn_alias_record(stage: str, cdn: aws.cloudfront.Distribution) -> aws.route53.Record:
+
+    hosted_zone = aws.route53.get_zone(name=DOMAIN_NAME)
 
     record = aws.route53.Record(
         "cdnAliasRecord",
@@ -61,12 +71,15 @@ def certificate(stage: str) -> aws.acm.Certificate:
     return cert
 
 
-def alb(stage: str, subnets: list[str]) -> tuple:
+def alb(stage: str, subnet_ids) -> tuple:
+
+    vpc = aws.ec2.get_vpc_output(default=True)
+
     alb = aws.lb.LoadBalancer(f"{stage}-alb",
         internal=False,
         load_balancer_type="application",
         security_groups=[],  # Add SG IDs here
-        subnets=subnets,
+        subnets=subnet_ids,
     )
 
     target_group = aws.lb.TargetGroup(f"{stage}-tg",

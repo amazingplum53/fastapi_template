@@ -2,8 +2,12 @@
 
 import pulumi_aws as aws
 from infrastructure import static, network, service
+import pulumi 
+
 
 def deploy(stage: str):
+
+    subnet_ids = network.subnet_ids(stage)
 
     cert = network.certificate(stage)
 
@@ -13,18 +17,20 @@ def deploy(stage: str):
 
     network.cdn_alias_record(stage, cdn)
 
-    alb, target_group, listener = network.alb(stage)
+    alb, target_group, listener = network.alb(stage, subnet_ids)
 
     cluster = aws.ecs.Cluster("django-cluster")
 
-    ecr_repo = aws.ecr.get_repository(name="decouple")
+    ecr = service.ecr(stage, stage + "decouple")
 
-    ecr_image_uri = f"{ecr_repo.repository_url}:latest"
+    ecr_image_uri = pulumi.Output.concat(ecr.repository_url, ":latest")
+
+    pulumi.export("ecrImageUri", ecr_image_uri)
 
     service.ecs(
         stage, 
         cluster, 
-        network.subnets, 
+        subnet_ids, 
         target_group, 
         ecr_image_uri
     )
