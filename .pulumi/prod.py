@@ -7,34 +7,33 @@ import pulumi
 
 def deploy(stage: str, project_name: str):
 
-    vpc, subnets = network.vpc(stage, project_name)
+    VPC, SUBNETS = network.vpc(stage, project_name)
 
-    subnet_ids = [id for id in subnets]
+    SUBNET_IDS = [id for id in SUBNETS]
 
-    cert = network.certificate(stage, project_name)
+    CERTIFICATE = network.certificate(stage, project_name)
 
-    bucket = static.bucket(stage, project_name)
+    BUCKET = static.bucket(stage, project_name)
 
-    cdn = static.cdn(stage, project_name, bucket, network.DOMAIN_NAME, cert)
+    CDN = static.cdn(stage, project_name, BUCKET, network.DOMAIN_NAME, CERTIFICATE)
 
-    network.cdn_alias_record(stage, project_name, cdn)
+    network.cdn_alias_record(stage, project_name, CDN)
 
-    alb, target_group, listener = network.alb(stage, project_name, subnet_ids)
+    ALB, TARGET_GROUP, LISTENER = network.alb(stage, project_name, SUBNET_IDS)
 
-    cluster = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
+    CLUSTER = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
 
-    ecr = service.ecr(stage, project_name)
+    ECR = service.ecr(stage, project_name)
 
-    ecr_image_uri = pulumi.Output.concat(ecr.repository_url, ":latest")
+    ecr_image_uri = pulumi.Output.concat(ECR.repository_url, ":latest")
 
-    pulumi.export("ecrImageUri", ecr_image_uri)
-
-    service.ecs(
+    CONTAINER_SERVICE = service.ecs(
         stage, 
         project_name,
-        cluster, 
-        subnet_ids, 
-        target_group, 
+        CLUSTER, 
+        VPC,
+        SUBNET_IDS, 
+        TARGET_GROUP, 
         ecr_image_uri
     )
 

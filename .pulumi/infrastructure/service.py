@@ -1,32 +1,46 @@
 import pulumi
 import pulumi_aws as aws
+import pulumi_docker as docker
 import json
 from pulumi import Output
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 def ecs(
     stage: str,
-    project_name,
+    project_name: str,
     cluster: aws.ecs.Cluster,
+    vpc: aws.ec2.Vpc,
     subnets: List[str],
     target_group: aws.lb.TargetGroup,
-    ecr_image: pulumi.Input[str],
-    env_vars: List[Dict[str, pulumi.Input[str]]] = [],
+    image: pulumi.Input[str],
 ) -> Dict[str, pulumi.Resource]:
+    """
+    Registers an ECS Task Definition & Fargate Service running `image`
+    behind the given ALB target_group.
+    """
+
+    security_group = aws.ec2.get_security_group(
+        filters=[
+            aws.ec2.GetSecurityGroupFilterArgs(
+                name   = "group-name",
+                values = ["default"],
+            ),
+            aws.ec2.GetSecurityGroupFilterArgs(
+                name   = "vpc-id",
+                values = [ vpc.id ],
+            ),
+        ]
+    )
 
     # 1) Task execution IAM Role
     task_execution_role = aws.iam.Role(
         f"{stage}-exec-role-{project_name}",
         assume_role_policy=aws.iam.get_policy_document(
             statements=[{
-                "actions": ["sts:AssumeRole"],
-                "principals": [{
-                    "type": "Service",
-                    "identifiers": ["ecs-tasks.amazonaws.com"],
-                }],
-                "effect": "Allow",
-                "sid": "",
+                "actions":   ["sts:AssumeRole"],
+                "principals":[{"type":"Service","identifiers":["ecs-tasks.amazonaws.com"]}],
+                "effect":    "Allow",
             }]
         ).json,
     )
@@ -37,110 +51,125 @@ def ecs(
         policy_arn="arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     )
 
-    # 2) Prepare to assemble container_definitions without embedding any raw Output into json.dumps()
-    #    We know ecr_image: Input[str] and env_vars[i]["value"]: Input[str].
-    #
-    #    Extract all of the "value" fields from env_vars. These may be plain str or Output[str].
-    env_values: List[pulumi.Input[str]] = [v["value"] for v in env_vars]
-
-    #    Build a single Output that waits for ecr_image + all env_values to resolve to plain strings:
-    all_inputs = Output.all(ecr_image, *env_values)
-
+    # 2) Build container_definitions JSON once 'image' resolves
     container_name = f"{stage}-server-{project_name}"
-
+    all_inputs = Output.all(image)
     container_defs = all_inputs.apply(lambda args: json.dumps([{
-        "name": container_name,
-        "image": args[0],  # resolved ecr_image string
-        "portMappings": [
-            {"containerPort": 8000}
-        ],
-        "essential": True,
-        "environment": [
-            {
-                "name": env_vars[i]["name"],
-                "value": args[i + 1],  # resolved value for each env var
-            }
-            for i in range(len(env_vars))
-        ],
-        # You can add "logConfiguration", "healthCheck", etc., here if needed
+        "name":          container_name,
+        "image":         args[0],
+        "portMappings":  [{"containerPort": 8000}],
+        "essential":     True,
+        "environment":   [],
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group":         f"/ecs/{project_name}",
+                "awslogs-region":        aws.config.region,
+                "awslogs-stream-prefix": "ecs",
+            },
+        },
     }]))
 
     # 3) Task Definition
-    task_definition = aws.ecs.TaskDefinition(
+    task_def = aws.ecs.TaskDefinition(
         f"{stage}-task-def-{project_name}",
-        family                   = f"{stage}-family-{project_name}",
+        family                   = f"{stage}-{project_name}",
         cpu                      = "512",
         memory                   = "1024",
         network_mode             = "awsvpc",
         requires_compatibilities = ["FARGATE"],
         execution_role_arn       = task_execution_role.arn,
-        container_definitions    = container_defs,  # Output[str] of the JSON array above
+        container_definitions    = container_defs,
     )
 
-    # 4) ECS Service, using Fargate and the provided ALB Target Group
-    service = aws.ecs.Service(
+    # 4) Fargate Service
+    container_service = aws.ecs.Service(
         f"{stage}-service-{project_name}",
-        cluster         = cluster.arn,
-        task_definition = task_definition.arn,
-        desired_count   = 1,
-        launch_type     = "FARGATE",
-        network_configuration=aws.ecs.ServiceNetworkConfigurationArgs(
+        cluster               = cluster.arn,
+        task_definition       = task_def.arn,
+        desired_count         = 1,
+        launch_type           = "FARGATE",
+        force_new_deployment  = True,
+        network_configuration = aws.ecs.ServiceNetworkConfigurationArgs(
             assign_public_ip = True,
             subnets          = subnets,
-            security_groups  = [],  # If you have a SG, put its ID here instead of an empty list
+            security_groups  = [security_group],
         ),
         load_balancers=[aws.ecs.ServiceLoadBalancerArgs(
             target_group_arn = target_group.arn,
             container_name   = container_name,
             container_port   = 8000,
         )],
-        opts=pulumi.ResourceOptions(depends_on=[task_definition]),
+        opts=pulumi.ResourceOptions(depends_on=[task_def]),
     )
 
-    # 5) Return a dict of resources in case callers want them
-    return {
-        "task_execution_role": task_execution_role,
-        "task_definition":     task_definition,
-        "service":             service,
-    }
+    return (
+        task_execution_role,
+        task_def,
+        container_service
+    )
 
 
-def ecr(stage, project_name):
+def ecr(
+    stage: str,
+    project_name: str,
+    docker_context: str = ".",
+    dockerfile_path: str = ".dockerfile/django-server.dockerfile",
+    image_tag: str = "latest",
+) -> Tuple[aws.ecr.Repository, pulumi.Output[str]]:
+    """
+    Creates (or references) an ECR repo, applies a simple lifecycle policy,
+    then builds & pushes your local Docker context to it.
+    Returns (repo, image_uri).
+    """
 
+    # 1) ECR repository
     repo = aws.ecr.Repository(
         f"{stage}-{project_name}",
-        name = f"{stage}-{project_name}",
-
-        image_scanning_configuration = aws.ecr.RepositoryImageScanningConfigurationArgs(
-            scan_on_push = True,
+        name=f"{stage}-{project_name}",
+        image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(
+            scan_on_push=True,
         ),
-        tags = {
+        tags={
             "Environment": stage,
             "Name":        f"{stage}-{project_name}",
-        }
+        },
     )
 
-    lifecycle_policy_json = json.dumps({
-        "rules": [
-            {
-                "rulePriority":       1,
-                "description":        "Keep only last 10 images",
-                "selection": {
-                    "tagStatus":      "any",
-                    "countType":      "imageCountMoreThan",
-                    "countNumber":    10
-                },
-                "action": {
-                    "type": "expire"
-                }
-            }
-        ]
-    })
-
-    lifecycle = aws.ecr.LifecyclePolicy(
+    # 2) Keep only last 10 images
+    aws.ecr.LifecyclePolicy(
         f"{stage}-{project_name}-lifecycle",
-        repository = repo.name,         # e.g. "prod-decouple"
-        policy     = lifecycle_policy_json,
+        repository=repo.name,
+        policy=json.dumps({
+            "rules": [{
+                "rulePriority": 1,
+                "description": "Keep only last 10 images",
+                "selection": {
+                    "tagStatus":   "any",
+                    "countType":   "imageCountMoreThan",
+                    "countNumber": 10,
+                },
+                "action": {"type": "expire"},
+            }]
+        }),
     )
 
-    return repo
+    # 3) Auth for Docker → ECR
+    auth = aws.ecr.get_authorization_token()
+
+    image = docker.Image(
+        f"{stage}-{project_name}-image",
+        image_name = repo.repository_url.apply(lambda url: f"{url}:{image_tag}"),
+        build = {                       # ← plain Python dict
+            "context"   : docker_context,
+            "dockerfile": dockerfile_path,
+        },
+        registry   = {
+            "server"  : repo.repository_url,
+            "username": auth.user_name,
+            "password": auth.password,
+        },
+    )
+
+    # 5) Return repo + fully-qualified URI
+    return (repo, image.image_name)
