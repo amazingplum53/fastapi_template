@@ -4,6 +4,8 @@ import pulumi_aws as aws
 from infrastructure import static, network, service
 import pulumi 
 
+PROJECT_ROOT = "/workspace/decouple/"
+
 
 def deploy(stage: str, project_name: str):
 
@@ -23,11 +25,11 @@ def deploy(stage: str, project_name: str):
 
     CLUSTER = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
 
-    ECR = service.ecr(stage, project_name)
+    ECR, IMAGE = service.ecr(stage, project_name, PROJECT_ROOT)
 
     ecr_image_uri = pulumi.Output.concat(ECR.repository_url, ":latest")
 
-    CONTAINER_SERVICE = service.ecs(
+    TASK_EXE_ROLE, TASK_DEF, CONTAINER_SERVICE = service.ecs(
         stage, 
         project_name,
         CLUSTER, 
