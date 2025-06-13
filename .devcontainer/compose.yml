@@ -8,6 +8,9 @@ services:
     volumes:
       - server:/workspace/
       - ${HOME}/.aws:/root/.aws:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     privileged: true
 
   django-server:
