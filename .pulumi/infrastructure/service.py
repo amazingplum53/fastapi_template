@@ -20,18 +20,7 @@ def ecs(
     behind the given ALB target_group.
     """
 
-    security_group = aws.ec2.get_security_group(
-        filters=[
-            aws.ec2.GetSecurityGroupFilterArgs(
-                name   = "group-name",
-                values = ["default"],
-            ),
-            aws.ec2.GetSecurityGroupFilterArgs(
-                name   = "vpc-id",
-                values = [ vpc.id ],
-            ),
-        ]
-    )
+    security_group = vpc.default_security_group_id
 
     # 1) Task execution IAM Role
     task_execution_role = aws.iam.Role(
@@ -113,8 +102,7 @@ def ecs(
 def ecr(
     stage: str,
     project_name: str,
-    docker_context: str = ".",
-    dockerfile_path: str = ".dockerfile/django-server.dockerfile",
+    project_path: str,
     image_tag: str = "latest",
 ) -> Tuple[aws.ecr.Repository, pulumi.Output[str]]:
     """
@@ -130,6 +118,7 @@ def ecr(
         image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(
             scan_on_push=True,
         ),
+        force_delete=True,
         tags={
             "Environment": stage,
             "Name":        f"{stage}-{project_name}",
@@ -161,8 +150,8 @@ def ecr(
         f"{stage}-{project_name}-image",
         image_name = repo.repository_url.apply(lambda url: f"{url}:{image_tag}"),
         build = {                       # ← plain Python dict
-            "context"   : docker_context,
-            "dockerfile": dockerfile_path,
+            "context"   : project_path,
+            "dockerfile": project_path + ".devcontainer/django-server.dockerfile",
         },
         registry   = {
             "server"  : repo.repository_url,
@@ -172,4 +161,4 @@ def ecr(
     )
 
     # 5) Return repo + fully-qualified URI
-    return (repo, image.image_name)
+    return (repo, image)
