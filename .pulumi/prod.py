@@ -5,23 +5,25 @@ from infrastructure import static, network, service
 import pulumi 
 
 
-def deploy(stage: str):
+def deploy(stage: str, project_name: str):
 
-    subnet_ids = network.subnet_ids(stage)
+    vpc, subnets = network.vpc(stage, project_name)
 
-    cert = network.certificate(stage)
+    subnet_ids = [id for id in subnets]
 
-    bucket = static.bucket(stage)
+    cert = network.certificate(stage, project_name)
 
-    cdn = static.cdn(stage, bucket, network.DOMAIN_NAME, cert)
+    bucket = static.bucket(stage, project_name)
 
-    network.cdn_alias_record(stage, cdn)
+    cdn = static.cdn(stage, project_name, bucket, network.DOMAIN_NAME, cert)
 
-    alb, target_group, listener = network.alb(stage, subnet_ids)
+    network.cdn_alias_record(stage, project_name, cdn)
 
-    cluster = aws.ecs.Cluster("django-cluster")
+    alb, target_group, listener = network.alb(stage, project_name, subnet_ids)
 
-    ecr = service.ecr(stage, stage + "decouple")
+    cluster = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
+
+    ecr = service.ecr(stage, project_name)
 
     ecr_image_uri = pulumi.Output.concat(ecr.repository_url, ":latest")
 
@@ -29,6 +31,7 @@ def deploy(stage: str):
 
     service.ecs(
         stage, 
+        project_name,
         cluster, 
         subnet_ids, 
         target_group, 

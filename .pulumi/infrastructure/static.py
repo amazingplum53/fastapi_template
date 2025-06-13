@@ -6,10 +6,10 @@ import json
 
 ABSOLUTE_PATH = "/workspace/decouple/static/"
 
-def bucket(stage: str) -> aws.s3.Bucket:
+def bucket(stage: str, project_name) -> aws.s3.Bucket:
     # Create the S3 bucket
     bucket = aws.s3.Bucket(
-        f"{stage}-bucket",
+        f"{stage}-bucket-{project_name}",
         website=aws.s3.BucketWebsiteArgs(
             index_document="index.html",
             error_document="404.html",
@@ -17,7 +17,7 @@ def bucket(stage: str) -> aws.s3.Bucket:
     )
 
     aws.s3.BucketPublicAccessBlock(
-        f"{stage}-bucket-public-access-block",
+        f"{stage}-bucket-public-access-block-{project_name}",
         bucket=bucket.id,
         block_public_acls=False,
         block_public_policy=False,
@@ -26,7 +26,7 @@ def bucket(stage: str) -> aws.s3.Bucket:
     )
 
     aws.s3.BucketPolicy(
-        f"{stage}-bucket-policy",
+        f"{stage}-bucket-policy-{project_name}",
         bucket=bucket.id,
         policy=bucket.id.apply(lambda bucket_name: json.dumps({
             "Version": "2012-10-17",
@@ -48,7 +48,7 @@ def bucket(stage: str) -> aws.s3.Bucket:
             mime_type = mime_type or "application/octet-stream"
 
             aws.s3.BucketObject(
-                f"{stage}-{relative_path}",
+                f"{stage}-{relative_path}-{project_name}",
                 bucket=bucket.id,
                 key=relative_path,
                 source=pulumi.FileAsset(str(file_path)),
@@ -60,29 +60,20 @@ def bucket(stage: str) -> aws.s3.Bucket:
 
     return bucket
 
+def cdn(stage: str, project_name: str, bucket: aws.s3.Bucket, domain_name: str, cert: aws.acm.Certificate) -> aws.cloudfront.Distribution:
+    # 1) Create a us-east-1 provider for CloudFront (CloudFront certificates must live in us-east-1)
+    us_east_1 = aws.Provider(f"{stage}-us-east-1", region="us-east-1")
 
-def cdn(stage: str, bucket: aws.s3.Bucket, domain_name: str, cert: aws.acm.Certificate) -> aws.cloudfront.Distribution:
-
-    oai = aws.cloudfront.OriginAccessIdentity("cdn-oai")
-
-    bucket_policy = aws.s3.BucketPolicy(
-        "bucketPolicy",
-        bucket=bucket.id,
-        policy=pulumi.Output.all(bucket.id, oai.iam_arn).apply(
-            lambda args: json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": {"AWS": args[1]},
-                    "Action": "s3:GetObject",
-                    "Resource": f"arn:aws:s3:::{args[0]}/*",
-                }]
-            })
-        ),
+    # 2) Origin Access Identity for S3, using the us-east-1 provider
+    oai = aws.cloudfront.OriginAccessIdentity(
+        f"{stage}-cdn-oai",
+        comment=f"Access identity for {stage}-{project_name} CDN",
+        opts=pulumi.ResourceOptions(provider=us_east_1)
     )
 
+    # 3) Build the CloudFront Distribution using the us-east-1 provider
     distribution = aws.cloudfront.Distribution(
-        "cdnDistribution",
+        f"{stage}-cdnDistribution-{project_name}",
         origins=[aws.cloudfront.DistributionOriginArgs(
             domain_name=bucket.bucket_regional_domain_name,
             origin_id=bucket.arn,
@@ -110,15 +101,14 @@ def cdn(stage: str, bucket: aws.s3.Bucket, domain_name: str, cert: aws.acm.Certi
                 restriction_type="none"
             )
         ),
-        aliases=[f"static.{domain_name}"],  # Add your subdomain here
+        aliases=[f"static.{domain_name}"],  # Your subdomain here
         viewer_certificate=aws.cloudfront.DistributionViewerCertificateArgs(
-            acm_certificate_arn=cert.arn,  # Use your ACM certificate ARN here
+            acm_certificate_arn=cert.arn,  # Certificate ARN must be from us-east-1
             ssl_support_method="sni-only",
             minimum_protocol_version="TLSv1.2_2021",
-        )
+        ),
+        opts=pulumi.ResourceOptions(provider=us_east_1)
     )
 
-    pulumi.export("cdn_domain_name", distribution.domain_name)
+    pulumi.export(f"{stage}-cdn_domain_name", distribution.domain_name)
     return distribution
-
-

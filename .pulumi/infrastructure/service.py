@@ -7,6 +7,7 @@ from typing import List, Dict
 
 def ecs(
     stage: str,
+    project_name,
     cluster: aws.ecs.Cluster,
     subnets: List[str],
     target_group: aws.lb.TargetGroup,
@@ -16,7 +17,7 @@ def ecs(
 
     # 1) Task execution IAM Role
     task_execution_role = aws.iam.Role(
-        f"{stage}-exec-role",
+        f"{stage}-exec-role-{project_name}",
         assume_role_policy=aws.iam.get_policy_document(
             statements=[{
                 "actions": ["sts:AssumeRole"],
@@ -31,7 +32,7 @@ def ecs(
     )
 
     aws.iam.RolePolicyAttachment(
-        f"{stage}-exec-attach",
+        f"{stage}-exec-attach-{project_name}",
         role=task_execution_role.name,
         policy_arn="arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     )
@@ -45,8 +46,10 @@ def ecs(
     #    Build a single Output that waits for ecr_image + all env_values to resolve to plain strings:
     all_inputs = Output.all(ecr_image, *env_values)
 
+    container_name = f"{stage}-server-{project_name}"
+
     container_defs = all_inputs.apply(lambda args: json.dumps([{
-        "name": stage,
+        "name": container_name,
         "image": args[0],  # resolved ecr_image string
         "portMappings": [
             {"containerPort": 8000}
@@ -64,8 +67,8 @@ def ecs(
 
     # 3) Task Definition
     task_definition = aws.ecs.TaskDefinition(
-        f"{stage}-task-def",
-        family                   = f"{stage}-family",
+        f"{stage}-task-def-{project_name}",
+        family                   = f"{stage}-family-{project_name}",
         cpu                      = "512",
         memory                   = "1024",
         network_mode             = "awsvpc",
@@ -76,7 +79,7 @@ def ecs(
 
     # 4) ECS Service, using Fargate and the provided ALB Target Group
     service = aws.ecs.Service(
-        f"{stage}-service",
+        f"{stage}-service-{project_name}",
         cluster         = cluster.arn,
         task_definition = task_definition.arn,
         desired_count   = 1,
@@ -88,7 +91,7 @@ def ecs(
         ),
         load_balancers=[aws.ecs.ServiceLoadBalancerArgs(
             target_group_arn = target_group.arn,
-            container_name   = stage,
+            container_name   = container_name,
             container_port   = 8000,
         )],
         opts=pulumi.ResourceOptions(depends_on=[task_definition]),
@@ -102,18 +105,18 @@ def ecs(
     }
 
 
-def ecr(stage, repo_name):
+def ecr(stage, project_name):
 
     repo = aws.ecr.Repository(
-        f"{stage}-{repo_name}",
-        name = f"{stage}-{repo_name}",
+        f"{stage}-{project_name}",
+        name = f"{stage}-{project_name}",
 
         image_scanning_configuration = aws.ecr.RepositoryImageScanningConfigurationArgs(
             scan_on_push = True,
         ),
         tags = {
             "Environment": stage,
-            "Name":        f"{stage}-{repo_name}",
+            "Name":        f"{stage}-{project_name}",
         }
     )
 
@@ -135,7 +138,7 @@ def ecr(stage, repo_name):
     })
 
     lifecycle = aws.ecr.LifecyclePolicy(
-        f"{stage}-{repo_name}-lifecycle",
+        f"{stage}-{project_name}-lifecycle",
         repository = repo.name,         # e.g. "prod-decouple"
         policy     = lifecycle_policy_json,
     )
