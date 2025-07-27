@@ -5,7 +5,7 @@ import sys
 
 sys.path.append("/server/decouple/")
 
-from decouple.secret_keys import get_secret, create_secret_file, load_secrets_file, SECRETS_FILE_NAME, FILE_PATH
+from decouple.secret.keys import get_secret, create_secret_file, load_secrets_file, SECRETS_FILE_NAME, FILE_PATH
 
 max_workers = cpu_count()
 
@@ -21,7 +21,7 @@ preload_app = True
 
 def on_starting(server):
 
-    if not path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}"): 
+    if not path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.env"): 
         try:
             secrets = get_secret()
             create_secret_file(secrets)

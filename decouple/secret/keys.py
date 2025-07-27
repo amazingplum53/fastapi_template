@@ -3,9 +3,9 @@ from botocore.exceptions import ClientError
 import json
 from os import environ
 
-SECRETS_FILE_NAME = "secrets.env"
+SECRETS_FILE_NAME = "secrets"
 AWS_SECRET_NAME = "prod-secrets"
-FILE_PATH = "/server/decouple/decouple"
+FILE_PATH = "/server/decouple/decouple/secret"
 
 
 def get_secret(secret_name: str = AWS_SECRET_NAME) -> str:
@@ -44,21 +44,31 @@ def create_secret_file(secret_json: str, file_name: str = SECRETS_FILE_NAME):
         print("Secret is not a valid JSON string.")
         return
 
-    with open(f"{FILE_PATH}/{file_name}", 'w') as f:
+    with open(f"{FILE_PATH}/{file_name}.env", 'w') as f:
         json.dump(secrets, f, indent=4)
+
+    output = ""
+
+    for key, value in secrets.items():
+        output += f'export {key}="{value}"\n'
+
+    with open(f"{FILE_PATH}/{file_name}.source", "w") as f:
+        f.write(output)
 
 
 def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
 
     try:
-        secrets = ""
+        secrets = {}
 
-        with open(f"{FILE_PATH}/{file_name}", "r") as f:
+        with open(f"{FILE_PATH}/{file_name}.env", "r") as f:
             secrets = json.loads(f.read())
 
     except json.JSONDecodeError:
         print("Secret is not a valid JSON string.")
         return  
+
+    output = ""
 
     for key, value in secrets.items():
         environ[key] = value
