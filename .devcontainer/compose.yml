@@ -8,6 +8,7 @@ services:
     volumes:
       - server:/workspace/
       - ${HOME}/.aws:/root/.aws:ro
+      - ${HOME}/.gitconfig:/root/.gitconfig:ro
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
