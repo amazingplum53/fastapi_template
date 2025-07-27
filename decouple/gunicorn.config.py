@@ -17,13 +17,15 @@ workers = max_workers
 
 environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 
+APP_ENV = os.getenv("APP_ENV", "dev")
+
 preload_app = True
 
 def on_starting(server):
 
     if not path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.env"): 
         try:
-            secrets = get_secret()
+            secrets = get_secret(APP_ENV)
             create_secret_file(secrets)
             load_secrets_file()
         except Exception as e:

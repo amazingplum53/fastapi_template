@@ -14,7 +14,7 @@ def ecs(
     subnets: List[str],
     target_group: aws.lb.TargetGroup,
     image: pulumi.Input[str],
-) -> Dict[str, pulumi.Resource]:
+) -> Tuple[str, pulumi.Resource]:
     """
     Registers an ECS Task Definition & Fargate Service running `image`
     behind the given ALB target_group.
@@ -48,7 +48,9 @@ def ecs(
         "image":         args[0],
         "portMappings":  [{"containerPort": 8000}],
         "essential":     True,
-        "environment":   [],
+        "environment":   [
+            { "name": "APP_ENV", "value": stage }
+        ],
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
