@@ -17,7 +17,7 @@ workers = max_workers
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 
-APP_ENV = os.getenv("APP_ENV", "dev")
+APP_ENV = os.getenv("APP_ENV", "local")
 
 preload_app = True
 
@@ -26,7 +26,13 @@ def on_starting(server):
     if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.env"): 
         try:
             print(f"Fetching {APP_ENV} secrets")
-            secrets = get_secret(APP_ENV)
+
+            if APP_ENV == "local":
+                secret_name = "dev" # Change this to (APP_ENV + user_name) for multiple local environs
+            else:
+                secret_name = APP_ENV
+
+            secrets = get_secret(secret_name)
             create_secret_file(secrets)
             load_secrets_file()
         except Exception as e:
