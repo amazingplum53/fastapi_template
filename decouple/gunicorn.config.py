@@ -21,21 +21,19 @@ APP_ENV = os.getenv("APP_ENV", "local")
 
 preload_app = True
 
-def when_ready(server):
+if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.json"): 
+    try:
+        print(f"Fetching {APP_ENV} secrets")
 
-    if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.json"): 
-        try:
-            print(f"Fetching {APP_ENV} secrets")
+        if APP_ENV == "local":
+            secret_name = "dev" # Change this to (APP_ENV + user_name) for multiple local environs
+        else:
+            secret_name = APP_ENV
 
-            if APP_ENV == "local":
-                secret_name = "dev" # Change this to (APP_ENV + user_name) for multiple local environs
-            else:
-                secret_name = APP_ENV
-
-            secrets = get_secret(secret_name)
-            create_secret_file(secrets)
-            load_secrets_file()
-        except Exception as e:
-            print("secrets not loaded:" + str(e))
-    else:
+        secrets = get_secret(secret_name)
+        create_secret_file(secrets)
         load_secrets_file()
+    except Exception as e:
+        print("secrets not loaded:" + str(e))
+else:
+    load_secrets_file()
