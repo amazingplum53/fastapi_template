@@ -3,7 +3,7 @@ SHELL := /bin/bash
 ssh:
 	docker exec -it server bash
 
-django-shell:
+shell:
 	docker exec -it server python3 manage.py shell
 
 logs:
@@ -13,10 +13,10 @@ restart:
 	docker restart server
 
 deploy:
-	source decouple/secret/secrets.source
+	source decouple/secret/secrets.source && \
 	pulumi up --cwd ./.pulumi/
 
 destroy:
-	source decouple/secret/secrets.source
+	source decouple/secret/secrets.source && \
 	pulumi destroy --cwd ./.pulumi/
 

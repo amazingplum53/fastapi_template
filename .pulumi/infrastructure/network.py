@@ -74,6 +74,38 @@ def vpc(stage, project_name):
     ]
 
 
+def alb_alias_record(stage: str, project_name, alb: aws.lb.LoadBalancer):
+
+    hosted_zone = aws.route53.get_zone(name=DOMAIN_NAME)
+
+    root_alias = aws.route53.Record(
+        f"{stage}-rootAlias-{project_name}",
+        zone_id = hosted_zone.zone_id,
+        name    = DOMAIN_NAME,        # "" also works for apex
+        type    = "A",
+        aliases = [aws.route53.RecordAliasArgs(
+            name    = alb.dns_name,   # dualstack.<lb-id>.<region>.elb.amazonaws.com
+            zone_id = alb.zone_id,    # Pulumi gives you the canonical zone ID
+            evaluate_target_health = False,
+        )],
+    )
+
+    # Optional IPv6
+    root_alias_aaaa = aws.route53.Record(
+        f"{stage}-rootAliasAAAA-{project_name}",
+        zone_id = hosted_zone.zone_id,
+        name    = DOMAIN_NAME,
+        type    = "AAAA",
+        aliases = [aws.route53.RecordAliasArgs(
+            name    = alb.dns_name,
+            zone_id = alb.zone_id,
+            evaluate_target_health = False,
+        )],
+    )
+
+    return root_alias, root_alias_aaaa
+
+
 def cdn_alias_record(stage: str, project_name, cdn: aws.cloudfront.Distribution) -> aws.route53.Record:
 
     hosted_zone = aws.route53.get_zone(name=DOMAIN_NAME)
@@ -92,83 +124,120 @@ def cdn_alias_record(stage: str, project_name, cdn: aws.cloudfront.Distribution)
     return record
 
 
-def certificate(stage: str, project_name) -> aws.acm.Certificate:
-    # Create AWS provider for us-east-1 region (required by ACM)
-    us_east_1_provider = aws.Provider("usEast1", region="us-east-1")
+def cdn_certificate(stage: str, project_name: str):
+    """us-east-1 cert for CloudFront (static sub-domain only)."""
+    us_east_1 = aws.Provider("usEast1", region="us-east-1")
 
     cert = aws.acm.Certificate(
-        f"{stage}-cdnCertificate-{project_name}",
+        f"{stage}-cf-cert-{project_name}",
         domain_name=f"static.{DOMAIN_NAME}",
         validation_method="DNS",
-        opts=pulumi.ResourceOptions(provider=us_east_1_provider),
+        opts=pulumi.ResourceOptions(provider=us_east_1),
     )
 
-    # Set up DNS validation record in Route 53
     zone = aws.route53.get_zone(name=DOMAIN_NAME)
 
-    validation_record = aws.route53.Record(
-        f"{stage}-certValidationRecord-{project_name}",
+    val = aws.route53.Record(
+        f"{stage}-cf-cert-val-{project_name}",
         zone_id=zone.zone_id,
         name=cert.domain_validation_options[0].resource_record_name,
         type=cert.domain_validation_options[0].resource_record_type,
         records=[cert.domain_validation_options[0].resource_record_value],
         ttl=60,
-        opts=pulumi.ResourceOptions(provider=us_east_1_provider),
+        opts=pulumi.ResourceOptions(provider=us_east_1),
     )
 
-    cert_validation = aws.acm.CertificateValidation(
-        f"{stage}-certValidation-{project_name}",
+    aws.acm.CertificateValidation(
+        f"{stage}-cf-cert-validation-{project_name}",
         certificate_arn=cert.arn,
-        validation_record_fqdns=[validation_record.fqdn],
-        opts=pulumi.ResourceOptions(provider=us_east_1_provider),
+        validation_record_fqdns=[val.fqdn],
+        opts=pulumi.ResourceOptions(provider=us_east_1),
     )
-
-    pulumi.export("Certificate", cert.id)
-    pulumi.export("CertificateValidation", cert_validation.id)
 
     return cert
 
 
-def alb(stage: str, project_name: str, subnet_ids: pulumi.Input[list]) -> tuple:
-
+def alb(stage: str, project_name: str, subnet_ids: pulumi.Input[list[str]]):
     first_subnet = aws.ec2.get_subnet_output(id=subnet_ids[0])
 
-    alb = aws.lb.LoadBalancer(
+    alb_sg = aws.ec2.SecurityGroup(
+        f"{stage}-alb-sg-{project_name}",
+        vpc_id=first_subnet.vpc_id,
+        description="ALB SG: allow 80/443",  # ascii dash
+        ingress=[
+            aws.ec2.SecurityGroupIngressArgs(protocol="tcp", from_port=80,  to_port=80,  cidr_blocks=["0.0.0.0/0"]),
+            aws.ec2.SecurityGroupIngressArgs(protocol="tcp", from_port=443, to_port=443, cidr_blocks=["0.0.0.0/0"]),
+        ],
+        egress=[aws.ec2.SecurityGroupEgressArgs(protocol="-1", from_port=0, to_port=0, cidr_blocks=["0.0.0.0/0"])],
+    )
+
+    lb = aws.lb.LoadBalancer(
         f"{stage}-alb-{project_name}",
         internal=False,
         load_balancer_type="application",
-        security_groups=[],  # Add your SG IDs here if needed
+        security_groups=[alb_sg.id],
         subnets=subnet_ids,
     )
 
-    target_group = aws.lb.TargetGroup(
+    tg = aws.lb.TargetGroup(
         f"{stage}-tg-{project_name}",
         port=8000,
         protocol="HTTP",
         target_type="ip",
-        vpc_id=first_subnet.vpc_id,  # Use VPC ID from the first subnet
+        vpc_id=first_subnet.vpc_id,
         health_check=aws.lb.TargetGroupHealthCheckArgs(
-            path="/health",
-            interval=30,
-            timeout=5,
-            healthy_threshold=2,
-            unhealthy_threshold=2,
+            path="/health", matcher="204", interval=30, timeout=5,
+            healthy_threshold=2, unhealthy_threshold=2,
         ),
     )
 
+    # Regional ACM cert for apex (same region as ALB)
+    zone = aws.route53.get_zone(name=DOMAIN_NAME)
+    alb_cert = aws.acm.Certificate(
+        f"{stage}-alb-cert-{project_name}",
+        domain_name=DOMAIN_NAME,
+        validation_method="DNS",
+    )
+
+    alb_val = aws.route53.Record(
+        f"{stage}-alb-cert-val-{project_name}",
+        zone_id=zone.zone_id,
+        name=alb_cert.domain_validation_options[0].resource_record_name,
+        type=alb_cert.domain_validation_options[0].resource_record_type,
+        records=[alb_cert.domain_validation_options[0].resource_record_value],
+        ttl=60,
+    )
+
+    alb_cert_validation = aws.acm.CertificateValidation(
+        f"{stage}-alb-cert-validation-{project_name}",
+        certificate_arn=alb_cert.arn,
+        validation_record_fqdns=[alb_val.fqdn],
+    )
+
+    # HTTPS listener (port 443)
     listener = aws.lb.Listener(
-        f"{stage}-listener-{project_name}",
-        load_balancer_arn=alb.arn,
+        f"{stage}-https-listener-{project_name}",
+        load_balancer_arn=lb.arn,
+        port=443,
+        protocol="HTTPS",
+        ssl_policy="ELBSecurityPolicy-TLS13-1-2-2021-06",
+        certificate_arn=alb_cert.arn,
+        default_actions=[aws.lb.ListenerDefaultActionArgs(type="forward", target_group_arn=tg.arn)],
+        opts=pulumi.ResourceOptions(depends_on=[alb_cert_validation]),
+    )
+
+    # HTTP -> HTTPS redirect
+    aws.lb.Listener(
+        f"{stage}-http-redirect-{project_name}",
+        load_balancer_arn=lb.arn,
         port=80,
-        protocol="HTTP",  # Must specify protocol
+        protocol="HTTP",
         default_actions=[aws.lb.ListenerDefaultActionArgs(
-            type="forward",
-            target_group_arn=target_group.arn,
+            type="redirect",
+            redirect=aws.lb.ListenerDefaultActionRedirectArgs(protocol="HTTPS", port="443", status_code="HTTP_301"),
         )],
     )
 
-    pulumi.export(f"{stage}_alb_dns", alb.dns_name)
-
-    return alb, target_group, listener
-
+    pulumi.export(f"{stage}_alb_dns", lb.dns_name)
+    return lb, tg, listener, alb_sg
 

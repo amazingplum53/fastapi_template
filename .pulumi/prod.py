@@ -11,9 +11,9 @@ def deploy(stage: str, project_name: str):
 
     VPC, SUBNETS = network.vpc(stage, project_name)
 
-    SUBNET_IDS = [id for id in SUBNETS]
+    SUBNET_IDS = [s.id for s in SUBNETS]
 
-    CERTIFICATE = network.certificate(stage, project_name)
+    CERTIFICATE = network.cdn_certificate(stage, project_name)
 
     BUCKET = static.bucket(stage, project_name)
 
@@ -21,7 +21,9 @@ def deploy(stage: str, project_name: str):
 
     network.cdn_alias_record(stage, project_name, CDN)
 
-    ALB, TARGET_GROUP, LISTENER = network.alb(stage, project_name, SUBNET_IDS)
+    ALB, TARGET_GROUP, LISTENER, SG_GROUP = network.alb(stage, project_name, SUBNET_IDS)
+
+    network.alb_alias_record(stage, project_name, ALB)
 
     CLUSTER = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
 
@@ -36,6 +38,7 @@ def deploy(stage: str, project_name: str):
         VPC,
         SUBNET_IDS, 
         TARGET_GROUP, 
-        ecr_image_uri
+        ecr_image_uri,
+        SG_GROUP
     )
 

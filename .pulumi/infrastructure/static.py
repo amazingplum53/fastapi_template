@@ -101,13 +101,12 @@ def cdn(stage: str, project_name: str, bucket: aws.s3.Bucket, domain_name: str, 
                 restriction_type="none"
             )
         ),
-        aliases=[f"static.{domain_name}"],  # Your subdomain here
+        aliases=[f"static.{domain_name}"],
         viewer_certificate=aws.cloudfront.DistributionViewerCertificateArgs(
             acm_certificate_arn=cert.arn,  # Certificate ARN must be from us-east-1
             ssl_support_method="sni-only",
             minimum_protocol_version="TLSv1.2_2021",
         ),
-        opts=pulumi.ResourceOptions(provider=us_east_1)
     )
 
     pulumi.export(f"{stage}-cdn_domain_name", distribution.domain_name)

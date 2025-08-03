@@ -6,6 +6,7 @@ from pulumi import Output
 from typing import List, Dict, Tuple
 
 
+
 def ecs(
     stage: str,
     project_name: str,
@@ -14,11 +15,29 @@ def ecs(
     subnets: List[str],
     target_group: aws.lb.TargetGroup,
     image: pulumi.Input[str],
+    alb_sg: aws.ec2.SecurityGroup
 ) -> Tuple[str, pulumi.Resource]:
     """
     Registers an ECS Task Definition & Fargate Service running `image`
     behind the given ALB target_group.
     """
+
+    task_sg = aws.ec2.SecurityGroup(
+        f"{stage}-task-sg-{project_name}",
+        vpc_id=vpc.id,
+        description="Tasks - allow 8000 from ALB",
+        ingress=[aws.ec2.SecurityGroupIngressArgs(
+            protocol="tcp", from_port=8000, to_port=8000, security_groups=[alb_sg.id],
+        )],
+        egress=[aws.ec2.SecurityGroupEgressArgs(
+            protocol="-1", from_port=0, to_port=0, cidr_blocks=["0.0.0.0/0"],
+        )],
+    )
+
+    log_group = aws.cloudwatch.LogGroup(
+        f"{stage}-lg-{project_name}",
+        retention_in_days=14,     
+    )
 
     security_group = vpc.default_security_group_id
 
@@ -42,7 +61,7 @@ def ecs(
 
     # 2) Build container_definitions JSON once 'image' resolves
     container_name = f"{stage}-server-{project_name}"
-    all_inputs = Output.all(image)
+    all_inputs = Output.all(image, log_group.name)
     container_defs = all_inputs.apply(lambda args: json.dumps([{
         "name":          container_name,
         "image":         args[0],
@@ -54,11 +73,11 @@ def ecs(
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group":         f"/ecs/{project_name}",
-                "awslogs-region":        aws.config.region,
-                "awslogs-stream-prefix": "ecs",
-            },
-        },
+                "awslogs-group": args[1],
+                "awslogs-region": aws.config.region,
+                "awslogs-stream-prefix": "ecs"
+            }
+        }
     }]))
 
     # 3) Task Definition
@@ -84,7 +103,7 @@ def ecs(
         network_configuration = aws.ecs.ServiceNetworkConfigurationArgs(
             assign_public_ip = True,
             subnets          = subnets,
-            security_groups  = [security_group],
+            security_groups  = [task_sg],
         ),
         load_balancers=[aws.ecs.ServiceLoadBalancerArgs(
             target_group_arn = target_group.arn,
@@ -92,6 +111,7 @@ def ecs(
             container_port   = 8000,
         )],
         opts=pulumi.ResourceOptions(depends_on=[task_def]),
+        health_check_grace_period_seconds = 120,
     )
 
     return (
