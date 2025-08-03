@@ -44,7 +44,7 @@ def create_secret_file(secret_json: str, file_name: str = SECRETS_FILE_NAME):
         print("Secret is not a valid JSON string.")
         return
 
-    with open(f"{FILE_PATH}/{file_name}.env", 'w') as f:
+    with open(f"{FILE_PATH}/{file_name}.json", 'w') as f:
         json.dump(secrets, f, indent=4)
 
     output = ""
@@ -61,7 +61,7 @@ def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
     try:
         secrets = {}
 
-        with open(f"{FILE_PATH}/{file_name}.env", "r") as f:
+        with open(f"{FILE_PATH}/{file_name}.json", "r") as f:
             secrets = json.loads(f.read())
 
     except json.JSONDecodeError:
