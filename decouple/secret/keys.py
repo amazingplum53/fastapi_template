@@ -68,8 +68,6 @@ def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
         print("Secret is not a valid JSON string.")
         return  
 
-    output = ""
-
     for key, value in secrets.items():
         environ[key] = value
 
@@ -82,5 +80,3 @@ if __name__ == "__main__":
 
     load_secrets_file()
 
-    print(environ.get("pulumi_access_token"))
-    

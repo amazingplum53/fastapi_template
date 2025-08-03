@@ -11,22 +11,27 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.environ['SECRET_KEY']
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+import json
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-wtfp4(3sq3&j^lbu_=i)r!w3vjnw-$6rsonij(+dp&ia^&udmi'
+APP_ENV = os.getenv("APP_ENV", "local")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+with open(f"env/{APP_ENV}.env.json", "r") as f:
+    ENV_VARIABLES = json.loads(f.read())
 
-ALLOWED_HOSTS = ["*"]
+DEBUG = ENV_VARIABLES["DEBUG"]
 
+ALLOWED_HOSTS = ENV_VARIABLES["ALLOWED_HOSTS"]
+
+DOMAIN_NAME = ENV_VARIABLES["DOMAIN_NAME"]
+
+STATIC_URL = ENV_VARIABLES["STATIC_URL"]
 
 # Application definition
 
@@ -36,8 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
 ]
+
+if STATIC_URL == "static/":
+    INSTALLED_APPS.append('django.contrib.staticfiles')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -51,18 +58,22 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'decouple.urls'
 
+CONTEXT_PROCESSORS = [
+    'django.template.context_processors.request',
+    'django.contrib.auth.context_processors.auth',
+    'django.contrib.messages.context_processors.messages',
+]
+
+if DEBUG:
+    CONTEXT_PROCESSORS.append('django.template.context_processors.debug')
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
+            'context_processors': CONTEXT_PROCESSORS,
         },
     },
 ]
@@ -110,12 +121,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
