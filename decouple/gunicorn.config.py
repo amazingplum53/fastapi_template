@@ -21,9 +21,9 @@ APP_ENV = os.getenv("APP_ENV", "local")
 
 preload_app = True
 
-def on_starting(server):
+def when_ready(server):
 
-    if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.env"): 
+    if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.json"): 
         try:
             print(f"Fetching {APP_ENV} secrets")
 
