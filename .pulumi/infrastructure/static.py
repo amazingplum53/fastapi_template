@@ -6,57 +6,85 @@ import json
 
 ABSOLUTE_PATH = "/workspace/decouple/static/"
 
-def bucket(stage: str, project_name) -> aws.s3.Bucket:
-    # Create the S3 bucket
-    bucket = aws.s3.Bucket(
+def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
+    # ------------------------------------------------------------------ #
+    # 1) Core bucket – ⚠️ NO SSE here
+    # ------------------------------------------------------------------ #
+    bucket = aws.s3.BucketV2(
         f"{stage}-bucket-{project_name}",
-        website=aws.s3.BucketWebsiteArgs(
-            index_document="index.html",
-            error_document="404.html",
-        )
+        bucket=f"{stage}-bucket-{project_name}",
+        force_destroy=True,
     )
 
+    # ------------------------------------------------------------------ #
+    # 2) Server-side encryption (must be a separate resource)
+    # ------------------------------------------------------------------ #
+    aws.s3.BucketServerSideEncryptionConfigurationV2(
+        f"{stage}-bucket-sse-{project_name}",
+        bucket=bucket.bucket,
+        rules=[
+            aws.s3.BucketServerSideEncryptionConfigurationV2RuleArgs(
+                apply_server_side_encryption_by_default=
+                    aws.s3.BucketServerSideEncryptionConfigurationV2RuleApplyServerSideEncryptionByDefaultArgs(
+                        sse_algorithm="AES256"
+                    )
+            )
+        ],
+    )
+
+    # ------------------------------------------------------------------ #
+    # 3) Static-website config
+    # ------------------------------------------------------------------ #
+    aws.s3.BucketWebsiteConfigurationV2(
+        f"{stage}-website-config-{project_name}",
+        bucket=bucket.bucket,
+        index_document={"suffix": "index.html"},
+        error_document={"key": "404.html"},
+    )
+
+    # ------------------------------------------------------------------ #
+    # 4) Public-access settings
+    # ------------------------------------------------------------------ #
     aws.s3.BucketPublicAccessBlock(
         f"{stage}-bucket-public-access-block-{project_name}",
-        bucket=bucket.id,
+        bucket=bucket.bucket,
         block_public_acls=False,
         block_public_policy=False,
         ignore_public_acls=False,
-        restrict_public_buckets=False
+        restrict_public_buckets=False,
     )
 
     aws.s3.BucketPolicy(
         f"{stage}-bucket-policy-{project_name}",
-        bucket=bucket.id,
-        policy=bucket.id.apply(lambda bucket_name: json.dumps({
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:GetObject",
-                "Resource": f"arn:aws:s3:::{bucket_name}/*"
-            }]
-        }))
+        bucket=bucket.bucket,
+        policy=bucket.bucket.apply(
+            lambda name: json.dumps({
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": f"arn:aws:s3:::{name}/*",
+                }],
+            })
+        ),
     )
 
-    # Upload files from source_dir to the bucket
+    # ------------------------------------------------------------------ #
+    # 5) Upload local files – use BucketObjectv2 (lower-case “v”)
+    # ------------------------------------------------------------------ #
     root_path = Path(ABSOLUTE_PATH)
     for file_path in root_path.rglob("*"):
         if file_path.is_file():
-            relative_path = file_path.relative_to(root_path).as_posix()
-            mime_type, _ = mimetypes.guess_type(file_path)
-            mime_type = mime_type or "application/octet-stream"
-
-            aws.s3.BucketObject(
-                f"{stage}-{relative_path}-{project_name}",
-                bucket=bucket.id,
-                key=relative_path,
+            rel = file_path.relative_to(root_path).as_posix()
+            mime, _ = mimetypes.guess_type(file_path)
+            aws.s3.BucketObjectv2(                     # ← fixed name
+                f"{stage}-{rel}-{project_name}",
+                bucket=bucket.bucket,
+                key=rel,
                 source=pulumi.FileAsset(str(file_path)),
-                content_type=mime_type,
+                content_type=mime or "application/octet-stream",
             )
-
-    # Export the bucket's website endpoint
-    pulumi.export(f"{stage}_bucket_endpoint", bucket.website_endpoint)
 
     return bucket
 
