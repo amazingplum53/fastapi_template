@@ -86,6 +86,8 @@ def handle_secrets(stack):
             secrets = get_secret(secret_name)
             create_secret_file(secrets)
             load_secrets_file()
+
+            print(f"Secrets Fetched")
         except Exception as e:
             print("secrets not loaded:" + str(e))
     else:
@@ -94,9 +96,5 @@ def handle_secrets(stack):
 
 if __name__ == "__main__":
 
-    json_secrets = get_secret(AWS_SECRET_NAME)
-
-    create_secret_file(json_secrets)
-
-    load_secrets_file()
+    handle_secrets("prod")
 
