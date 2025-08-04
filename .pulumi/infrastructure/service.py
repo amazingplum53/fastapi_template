@@ -68,7 +68,7 @@ def ecs(
         "portMappings":  [{"containerPort": 8000}],
         "essential":     True,
         "environment":   [
-            { "name": "APP_ENV", "value": stage }
+            { "name": "STACK", "value": stage }
         ],
         "logConfiguration": {
             "logDriver": "awslogs",

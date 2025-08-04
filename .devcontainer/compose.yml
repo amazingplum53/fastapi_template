@@ -20,6 +20,8 @@ services:
     build:
       dockerfile: .devcontainer/django-server.dockerfile
       context: ./..
+    environment:
+      - STACK=${STACK:-local}
     volumes:
       - server:/server/
       - ${HOME}/.aws:/root/.aws:ro

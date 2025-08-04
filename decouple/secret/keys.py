@@ -72,6 +72,26 @@ def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
         environ[key] = value
 
 
+def handle_secrets(stack):
+
+    if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.json"): 
+        try:
+            print(f"Fetching {stack} secrets")
+
+            if stack == "local":
+                secret_name = "dev" # Change this to (STACK + user_name) for multiple local environs
+            else:
+                secret_name = stack
+
+            secrets = get_secret(secret_name)
+            create_secret_file(secrets)
+            load_secrets_file()
+        except Exception as e:
+            print("secrets not loaded:" + str(e))
+    else:
+        load_secrets_file()
+
+
 if __name__ == "__main__":
 
     json_secrets = get_secret(AWS_SECRET_NAME)

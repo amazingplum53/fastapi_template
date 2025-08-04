@@ -20,9 +20,9 @@ SECRET_KEY = os.environ['SECRET_KEY']
 
 import json
 
-APP_ENV = os.getenv("APP_ENV", "local")
+STACK = os.getenv("STACK", "local")
 
-with open(f"{BASE_DIR}/decouple/env/{APP_ENV}.env.json", "r") as f:
+with open(f"{BASE_DIR}/decouple/env/{STACK}.env.json", "r") as f:
     ENV_VARIABLES = json.loads(f.read())
 
 DEBUG = ENV_VARIABLES["DEBUG"]
