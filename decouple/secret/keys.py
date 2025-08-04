@@ -1,7 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 import json
-from os import environ
+import os
 
 SECRETS_FILE_NAME = "secrets"
 AWS_SECRET_NAME = "prod-secrets"
@@ -69,7 +69,7 @@ def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
         return  
 
     for key, value in secrets.items():
-        environ[key] = value
+        os.environ[key] = value
 
 
 def handle_secrets(stack):
