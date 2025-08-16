@@ -29,7 +29,7 @@ services:
     ports:
       - "8000:8000"
     restart: always
-    command: ["gunicorn", "decouple.wsgi", "-c", "decouple/gunicorn.config.py", "--reload"]
+    command: ["gunicorn", "decouple.wsgi", "-c", "/server/decouple/decouple/gunicorn.config.py", "--reload"]
 
 volumes:
   server:
