@@ -9,9 +9,10 @@ PROJECT_ROOT = "/workspace/decouple/"
 
 def deploy(stage: str, project_name: str):
 
-    VPC, SUBNETS = network.vpc(stage, project_name)
+    VPC, PUBLIC_SUBNETS, PRIVATE_SUBNETS = network.vpc(stage, project_name)
 
-    SUBNET_IDS = [s.id for s in SUBNETS]
+    PUBLIC_SUBNET_IDS = [s.id for s in PUBLIC_SUBNETS]
+    PRIVATE_SUBNET_IDS = [s.id for s in PRIVATE_SUBNETS]
 
     CERTIFICATE = network.cdn_certificate(stage, project_name)
 
@@ -21,7 +22,7 @@ def deploy(stage: str, project_name: str):
 
     network.cdn_alias_record(stage, project_name, CDN)
 
-    ALB, TARGET_GROUP, LISTENER, SG_GROUP = network.alb(stage, project_name, SUBNET_IDS)
+    ALB, TARGET_GROUP, LISTENER, SG_GROUP = network.alb(stage, project_name, PUBLIC_SUBNET_IDS)
 
     network.alb_alias_record(stage, project_name, ALB)
 
@@ -29,16 +30,14 @@ def deploy(stage: str, project_name: str):
 
     ECR, IMAGE = service.ecr(stage, project_name, PROJECT_ROOT)
 
-    ecr_image_uri = pulumi.Output.concat(ECR.repository_url, ":latest")
-
     TASK_EXE_ROLE, TASK_DEF, CONTAINER_SERVICE = service.ecs(
         stage, 
         project_name,
         CLUSTER, 
         VPC,
-        SUBNET_IDS, 
+        PRIVATE_SUBNET_IDS, 
         TARGET_GROUP, 
-        ecr_image_uri,
-        SG_GROUP
+        IMAGE,
+        SG_GROUP,
     )
 

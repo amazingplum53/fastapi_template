@@ -29,6 +29,16 @@ DEBUG = ENV_VARIABLES["DEBUG"]
 
 ALLOWED_HOSTS = ENV_VARIABLES["ALLOWED_HOSTS"]
 
+if STACK == "local":
+    protocol = "http://"
+else:
+    protocol = "https://"
+
+CSRF_TRUSTED_ORIGINS = [
+    protocol + domain
+    for domain in ALLOWED_HOSTS
+]
+    
 DOMAIN_NAME = ENV_VARIABLES["DOMAIN_NAME"]
 
 STATIC_URL = ENV_VARIABLES["STATIC_URL"]

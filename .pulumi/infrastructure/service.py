@@ -14,8 +14,8 @@ def ecs(
     vpc: aws.ec2.Vpc,
     subnets: List[str],
     target_group: aws.lb.TargetGroup,
-    image: pulumi.Input[str],
-    alb_sg: aws.ec2.SecurityGroup
+    image: docker.Image,
+    alb_sg: aws.ec2.SecurityGroup,
 ) -> Tuple[str, pulumi.Resource]:
     """
     Registers an ECS Task Definition & Fargate Service running `image`
@@ -61,14 +61,14 @@ def ecs(
 
     # 2) Build container_definitions JSON once 'image' resolves
     container_name = f"{stage}-server-{project_name}"
-    all_inputs = Output.all(image, log_group.name)
+    all_inputs = Output.all(image.repo_digest, log_group.name)
     container_defs = all_inputs.apply(lambda args: json.dumps([{
         "name":          container_name,
         "image":         args[0],
         "portMappings":  [{"containerPort": 8000}],
         "essential":     True,
         "environment":   [
-            { "name": "STACK", "value": stage }
+            { "name": "STACK", "value": stage },
         ],
         "logConfiguration": {
             "logDriver": "awslogs",
@@ -101,9 +101,9 @@ def ecs(
         launch_type           = "FARGATE",
         force_new_deployment  = True,
         network_configuration = aws.ecs.ServiceNetworkConfigurationArgs(
-            assign_public_ip = True,
+            assign_public_ip = False,
             subnets          = subnets,
-            security_groups  = [task_sg],
+            security_groups  = [task_sg.id],
         ),
         load_balancers=[aws.ecs.ServiceLoadBalancerArgs(
             target_group_arn = target_group.arn,

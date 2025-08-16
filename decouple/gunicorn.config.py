@@ -17,7 +17,11 @@ workers = max_workers
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 
+ALB_DNS_NAME = os.getenv("ALB_DNS_NAME", "")
+
 STACK = os.getenv("STACK", "local")
+
+print(f"Using {STACK} env file")
 
 preload_app = True
 

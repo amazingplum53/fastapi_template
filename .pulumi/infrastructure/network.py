@@ -5,7 +5,6 @@ DOMAIN_NAME = "matthewhill.click"
 
 
 def vpc(stage, project_name):
-
     azs = aws.get_availability_zones()
 
     vpc = aws.ec2.Vpc(
@@ -16,27 +15,25 @@ def vpc(stage, project_name):
         tags={"Name": "pulumi-two-az-vpc"},
     )
 
-    # 4) Create an Internet Gateway so our subnets can be public
+    # Internet Gateway
     igw = aws.ec2.InternetGateway(
         f"{stage}-igw-{project_name}",
         vpc_id=vpc.id,
         tags={"Name": "pulumi-vpc-igw"},
     )
 
-    # 5) Make a single public route table for the VPC
-    public_route_table = aws.ec2.RouteTable(
+    # Public route table → IGW
+    public_rt = aws.ec2.RouteTable(
         f"{stage}-publicRT-{project_name}",
         vpc_id=vpc.id,
-        routes=[
-            aws.ec2.RouteTableRouteArgs(
-                cidr_block="0.0.0.0/0",
-                gateway_id=igw.id,
-            ),
-        ],
+        routes=[aws.ec2.RouteTableRouteArgs(
+            cidr_block="0.0.0.0/0",
+            gateway_id=igw.id,
+        )],
         tags={"Name": "pulumi-public-rt"},
     )
 
-    # 6) Create two public subnets in two different AZs
+    # Public subnets (A/B)
     public_subnet_a = aws.ec2.Subnet(
         f"{stage}-publicSubnetA-{project_name}",
         vpc_id=vpc.id,
@@ -45,7 +42,6 @@ def vpc(stage, project_name):
         map_public_ip_on_launch=True,
         tags={"Name": pulumi.Output.concat("pulumi-public-subnet-", azs.names[0])},
     )
-
     public_subnet_b = aws.ec2.Subnet(
         f"{stage}-publicSubnetB-{project_name}",
         vpc_id=vpc.id,
@@ -54,23 +50,57 @@ def vpc(stage, project_name):
         map_public_ip_on_launch=True,
         tags={"Name": pulumi.Output.concat("pulumi-public-subnet-", azs.names[1])},
     )
+    aws.ec2.RouteTableAssociation(f"{stage}-rtaA-{project_name}",
+        subnet_id=public_subnet_a.id, route_table_id=public_rt.id)
+    aws.ec2.RouteTableAssociation(f"{stage}-rtaB-{project_name}",
+        subnet_id=public_subnet_b.id, route_table_id=public_rt.id)
 
-    # 7) Associate both subnets with the public route table
-    rta_a = aws.ec2.RouteTableAssociation(
-        f"{stage}-rtaA-{project_name}",
+    # Private subnets (A/B) — NO public IPs
+    private_subnet_a = aws.ec2.Subnet(
+        f"{stage}-privateSubnetA-{project_name}",
+        vpc_id=vpc.id,
+        cidr_block="10.0.101.0/24",
+        availability_zone=azs.names[0],
+        map_public_ip_on_launch=False,
+        tags={"Name": pulumi.Output.concat("pulumi-private-subnet-", azs.names[0])},
+    )
+    private_subnet_b = aws.ec2.Subnet(
+        f"{stage}-privateSubnetB-{project_name}",
+        vpc_id=vpc.id,
+        cidr_block="10.0.102.0/24",
+        availability_zone=azs.names[1],
+        map_public_ip_on_launch=False,
+        tags={"Name": pulumi.Output.concat("pulumi-private-subnet-", azs.names[1])},
+    )
+
+    # ONE NAT Gateway in publicSubnetA
+    nat_eip = aws.ec2.Eip(f"{stage}-nat-eip-{project_name}", domain="vpc")
+    nat_gw = aws.ec2.NatGateway(
+        f"{stage}-natgw-{project_name}",
         subnet_id=public_subnet_a.id,
-        route_table_id=public_route_table.id,
+        allocation_id=nat_eip.id,
+        tags={"Name": f"{stage}-natgw-{project_name}"},
     )
 
-    rta_b = aws.ec2.RouteTableAssociation(
-        f"{stage}-rtaB-{project_name}",
-        subnet_id=public_subnet_b.id,
-        route_table_id=public_route_table.id,
-    )
+    # Private route tables → NAT (both AZs point to the single NAT)
+    private_rt_a = aws.ec2.RouteTable(f"{stage}-privateRT-A-{project_name}", vpc_id=vpc.id)
+    aws.ec2.Route(f"{stage}-privateRoute-A-{project_name}",
+        route_table_id=private_rt_a.id, destination_cidr_block="0.0.0.0/0",
+        nat_gateway_id=nat_gw.id)
+    aws.ec2.RouteTableAssociation(f"{stage}-privateRTA-A-{project_name}",
+        subnet_id=private_subnet_a.id, route_table_id=private_rt_a.id)
+
+    private_rt_b = aws.ec2.RouteTable(f"{stage}-privateRT-B-{project_name}", vpc_id=vpc.id)
+    aws.ec2.Route(f"{stage}-privateRoute-B-{project_name}",
+        route_table_id=private_rt_b.id, destination_cidr_block="0.0.0.0/0",
+        nat_gateway_id=nat_gw.id)
+    aws.ec2.RouteTableAssociation(f"{stage}-privateRTA-B-{project_name}",
+        subnet_id=private_subnet_b.id, route_table_id=private_rt_b.id)
 
     return [
         vpc,
-        [public_subnet_a, public_subnet_b]
+        [public_subnet_a, public_subnet_b],
+        [private_subnet_a, private_subnet_b],
     ]
 
 
