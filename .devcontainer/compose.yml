@@ -14,6 +14,7 @@ services:
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
     privileged: true
+    command: ["bash", "-lc", "sleep infinity"]
 
   django-server:
     container_name: server
