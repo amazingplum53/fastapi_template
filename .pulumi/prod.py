@@ -2,30 +2,42 @@
 
 import pulumi_aws as aws
 from infrastructure import static, network, service
+import pulumi 
 
-def deploy(stage: str):
+PROJECT_ROOT = "/workspace/decouple/"
 
-    cert = network.certificate(stage)
 
-    bucket = static.bucket(stage)
+def deploy(stage: str, project_name: str):
 
-    cdn = static.cdn(stage, bucket, network.DOMAIN_NAME, cert)
+    VPC, PUBLIC_SUBNETS, PRIVATE_SUBNETS = network.vpc(stage, project_name)
 
-    network.cdn_alias_record(stage, cdn)
+    PUBLIC_SUBNET_IDS = [s.id for s in PUBLIC_SUBNETS]
+    PRIVATE_SUBNET_IDS = [s.id for s in PRIVATE_SUBNETS]
 
-    alb, target_group, listener = network.alb(stage)
+    CERTIFICATE = network.cdn_certificate(stage, project_name)
 
-    cluster = aws.ecs.Cluster("django-cluster")
+    BUCKET = static.bucket(stage, project_name)
 
-    ecr_repo = aws.ecr.get_repository(name="decouple")
+    CDN = static.cdn(stage, project_name, BUCKET, network.DOMAIN_NAME, CERTIFICATE)
 
-    ecr_image_uri = f"{ecr_repo.repository_url}:latest"
+    network.cdn_alias_record(stage, project_name, CDN)
 
-    service.ecs(
+    ALB, TARGET_GROUP, LISTENER, SG_GROUP = network.alb(stage, project_name, PUBLIC_SUBNET_IDS)
+
+    network.alb_alias_record(stage, project_name, ALB)
+
+    CLUSTER = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
+
+    ECR, IMAGE = service.ecr(stage, project_name, PROJECT_ROOT)
+
+    TASK_EXE_ROLE, TASK_DEF, CONTAINER_SERVICE = service.ecs(
         stage, 
-        cluster, 
-        network.subnets, 
-        target_group, 
-        ecr_image_uri
+        project_name,
+        CLUSTER, 
+        VPC,
+        PRIVATE_SUBNET_IDS, 
+        TARGET_GROUP, 
+        IMAGE,
+        SG_GROUP,
     )
 

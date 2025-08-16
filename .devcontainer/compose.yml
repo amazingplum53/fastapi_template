@@ -8,6 +8,11 @@ services:
     volumes:
       - server:/workspace/
       - ${HOME}/.aws:/root/.aws:ro
+      - ${HOME}/.gitconfig:/root/.gitconfig:ro
+      - ${HOME}/.git-credentials:/root/.git-credentials:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     privileged: true
 
   django-server:
@@ -15,12 +20,15 @@ services:
     build:
       dockerfile: .devcontainer/django-server.dockerfile
       context: ./..
+    environment:
+      - STACK=${STACK:-local}
     volumes:
       - server:/server/
       - ${HOME}/.aws:/root/.aws:ro
     ports:
       - "8000:8000"
     restart: always
+    command: ["gunicorn", "decouple.wsgi", "-c", "decouple/gunicorn.config.py", "--reload"]
 
 volumes:
   server:

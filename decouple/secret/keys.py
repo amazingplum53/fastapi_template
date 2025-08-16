@@ -1,11 +1,11 @@
 import boto3
 from botocore.exceptions import ClientError
 import json
-from os import environ
+import os
 
-SECRETS_FILE_NAME = "secrets.env"
+SECRETS_FILE_NAME = "secrets"
 AWS_SECRET_NAME = "prod-secrets"
-FILE_PATH = "/server/decouple/decouple"
+FILE_PATH = "/server/decouple/decouple/secret"
 
 
 def get_secret(secret_name: str = AWS_SECRET_NAME) -> str:
@@ -44,16 +44,24 @@ def create_secret_file(secret_json: str, file_name: str = SECRETS_FILE_NAME):
         print("Secret is not a valid JSON string.")
         return
 
-    with open(f"{FILE_PATH}/{file_name}", 'w') as f:
+    with open(f"{FILE_PATH}/{file_name}.json", 'w') as f:
         json.dump(secrets, f, indent=4)
+
+    output = ""
+
+    for key, value in secrets.items():
+        output += f'export {key}="{value}"\n'
+
+    with open(f"{FILE_PATH}/{file_name}.source", "w") as f:
+        f.write(output)
 
 
 def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
 
     try:
-        secrets = ""
+        secrets = {}
 
-        with open(f"{FILE_PATH}/{file_name}", "r") as f:
+        with open(f"{FILE_PATH}/{file_name}.json", "r") as f:
             secrets = json.loads(f.read())
 
     except json.JSONDecodeError:
@@ -61,16 +69,32 @@ def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
         return  
 
     for key, value in secrets.items():
-        environ[key] = value
+        os.environ[key] = value
+
+
+def handle_secrets(stack):
+
+    if not os.path.exists(f"{FILE_PATH}/{SECRETS_FILE_NAME}.json"): 
+        try:
+            print(f"Fetching {stack} secrets")
+
+            if stack == "local":
+                secret_name = "dev" # Change this to (STACK + user_name) for multiple local environs
+            else:
+                secret_name = stack
+
+            secrets = get_secret(secret_name)
+            create_secret_file(secrets)
+            load_secrets_file()
+
+            print(f"Secrets Fetched")
+        except Exception as e:
+            print("secrets not loaded:" + str(e))
+    else:
+        load_secrets_file()
 
 
 if __name__ == "__main__":
 
-    json_secrets = get_secret(AWS_SECRET_NAME)
+    handle_secrets("prod")
 
-    create_secret_file(json_secrets)
-
-    load_secrets_file()
-
-    print(environ.get("pulumi_access_token"))
-    

@@ -7,6 +7,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      STACK: prod
     steps:
       - run: echo "Running auto deploy"
 
@@ -25,7 +27,33 @@ jobs:
           driver: docker 
       
       - name: Start containers
-        run: docker compose -f .devcontainer/compose.yml up --detach --wait
+        run: STACK=${{ env.STACK }} docker compose -f .devcontainer/compose.yml up --detach --wait
 
-      - name: Health Check
-        run: curl http://localhost:8000
+      - name: Wait for container to be ready
+        run: |
+          for i in {1..10}; do
+            docker exec dev echo "Container ready" && break || sleep 2
+          done
+
+      - name: Wait for Django server health check
+        run: |
+          for i in {1..10}; do
+            if curl --fail --silent http://localhost:8000/health/; then
+              echo "Django server is healthy"
+              exit 0
+            else
+              echo "Waiting for server..."
+              sleep 2
+            fi
+          done
+          echo "Server failed health check"
+          exit 1
+
+      - name: Run make deploy in dev container
+        run: docker exec dev bash -c "make deploy"
+
+      - name: Clean up containers
+        run: docker compose -f .devcontainer/compose.yml down
+
+
+
