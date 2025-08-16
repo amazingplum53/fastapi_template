@@ -7,17 +7,23 @@ sys.path.append("/server/decouple/")
 
 from decouple.secret.keys import handle_secrets
 
-max_workers = cpu_count()
-
 bind = '0.0.0.0:' + os.environ.get('PORT', '8000')
 
-max_requests = 1000
-
+# Concurrency
+threads = 1
+max_workers = cpu_count()
 workers = max_workers
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
+# Timeouts & keepalive
+timeout = 60
+graceful_timeout = 30
+keepalive = 5
 
-ALB_DNS_NAME = os.getenv("ALB_DNS_NAME", "")
+# Worker recycling
+max_requests = 1000
+max_requests_jitter = 100
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'decouple.settings')
 
 STACK = os.getenv("STACK", "local")
 
