@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+PROJECT_NAME = fastapi_template
 STACK ?= prod
 
 ssh:
@@ -14,10 +15,10 @@ restart:
 	docker restart server
 
 deploy:
-	source decouple/secret/secrets.source && \
+	source $(PROJECT_NAME)/secret/secrets.source && \
 	pulumi up --cwd ./.pulumi/ --stack $(STACK) --yes
 
 destroy:
-	source decouple/secret/secrets.source && \
+	source $(PROJECT_NAME)/secret/secrets.source && \
 	pulumi destroy --cwd ./.pulumi/ --stack $(STACK) --yes
 

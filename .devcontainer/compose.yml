@@ -19,7 +19,7 @@ services:
   django-server:
     container_name: server
     build:
-      dockerfile: .devcontainer/django-server.dockerfile
+      dockerfile: .devcontainer/server.dockerfile
       context: ./..
     environment:
       - STACK=${STACK:-local}
@@ -29,7 +29,7 @@ services:
     ports:
       - "8000:8000"
     restart: always
-    command: ["gunicorn", "decouple.wsgi", "-c", "/server/decouple/decouple/gunicorn.config.py", "--reload"]
+    command: ["bash", "-lc", "sleep infinity"]
 
 volumes:
   server:
