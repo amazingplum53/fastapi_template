@@ -4,8 +4,6 @@ import mimetypes
 from pathlib import Path
 import json
 
-ABSOLUTE_PATH = "/workspace/decouple/static/"
-
 def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     # ------------------------------------------------------------------ #
     # 1) Core bucket – ⚠️ NO SSE here
@@ -73,7 +71,8 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     # ------------------------------------------------------------------ #
     # 5) Upload local files – use BucketObjectv2 (lower-case “v”)
     # ------------------------------------------------------------------ #
-    root_path = Path(ABSOLUTE_PATH)
+
+    root_path = Path(f"/workspace/{project_name}/static/")
     for file_path in root_path.rglob("*"):
         if file_path.is_file():
             rel = file_path.relative_to(root_path).as_posix()

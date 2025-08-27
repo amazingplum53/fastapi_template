@@ -1,6 +1,6 @@
 FROM python:latest
 
-WORKDIR /workspace/decouple/
+WORKDIR /workspace/fastapi_template/
 
 COPY dev.requirements.txt /tmp/dev.requirements.txt
 

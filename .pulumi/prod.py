@@ -4,10 +4,9 @@ import pulumi_aws as aws
 from infrastructure import static, network, service
 import pulumi 
 
-PROJECT_ROOT = "/workspace/decouple/"
-
-
 def deploy(stage: str, project_name: str):
+
+    PROJECT_ROOT = f"/workspace/{project_name}/"
 
     VPC, PUBLIC_SUBNETS, PRIVATE_SUBNETS = network.vpc(stage, project_name)
 

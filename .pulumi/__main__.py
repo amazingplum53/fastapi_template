@@ -16,4 +16,4 @@ stack_main = {
 if stack_main is None:
     raise ValueError(f"Unsupported stack: {stack}")
 
-stack_main.deploy(stack, "decouple")
+stack_main.deploy(stack, "fastapi_template")
