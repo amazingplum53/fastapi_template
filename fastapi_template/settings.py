@@ -13,7 +13,7 @@ with open(f"{BASE_DIR}/{PROJECT_NAME}/env/{STACK}.json", "r") as f:
     ENV_VARIABLES = json.loads(f.read())
 
     for name, value in ENV_VARIABLES.items():
-        globals()[key] = value
+        globals()[name] = value
 
 if STACK == "local":
     protocol = "http://"
