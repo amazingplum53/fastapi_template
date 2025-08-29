@@ -15,15 +15,10 @@ with open(f"{BASE_DIR}/{PROJECT_NAME}/env/{STACK}.json", "r") as f:
     for name, value in ENV_VARIABLES.items():
         globals()[name] = value
 
-if STACK == "local":
-    protocol = "http://"
-else:
-    protocol = "https://"
-
 CSRF_TRUSTED_ORIGINS = [
-    protocol + domain
+    PROTOCOL + "://" + domain
     for domain in ALLOWED_HOSTS
 ]
 
-APPEND_SLASH = True
-
+if STATIC_URL is None:
+    STATIC_URL = "/static"

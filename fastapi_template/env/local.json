@@ -2,5 +2,6 @@
     "DOMAIN_NAME": "localhost",
     "ALLOWED_HOSTS": ["localhost", "127.0.0.1"],
     "DEBUG": true,
-    "STATIC_URL": "static/"
+    "STATIC_URL": null,
+    "PROTOCOL": "http"
 }
