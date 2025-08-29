@@ -3,6 +3,6 @@
   "dockerComposeFile": "compose.yml",
   "service": "dev",
   "remoteUser": "root",
-  "workspaceFolder": "/workspace/decouple/",
+  "workspaceFolder": "/workspace/fastapi_template/",
   "overrideCommand": true
 }
