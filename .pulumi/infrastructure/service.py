@@ -173,7 +173,7 @@ def ecr(
         image_name = repo.repository_url.apply(lambda url: f"{url}:{image_tag}"),
         build = {                       # ← plain Python dict
             "context"   : project_path,
-            "dockerfile": project_path + ".devcontainer/django-server.dockerfile",
+            "dockerfile": project_path + ".devcontainer/server.dockerfile",
         },
         registry   = {
             "server"  : repo.repository_url,
