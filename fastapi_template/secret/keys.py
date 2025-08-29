@@ -33,6 +33,8 @@ def get_secret(secret_name: str = AWS_SECRET_NAME) -> str:
     if not secret:
         print("No secret found or it's binary data.")
         return None
+    else:
+        print("Secrets fetched - saving to system")
 
     return secret
 
@@ -56,6 +58,8 @@ def create_secret_file(secret_json: str, file_name: str = SECRETS_FILE_NAME):
     with open(f"{FILE_PATH}/{file_name}.source", "w") as f:
         f.write(output)
 
+    print(f"Files created at {FILE_PATH}")
+
 
 def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
 
@@ -69,8 +73,10 @@ def load_secrets_file(file_name: str = SECRETS_FILE_NAME):
         print("Secret is not a valid JSON string.")
         return  
 
-    for key, value in secrets.items():
-        os.environ[key] = value
+    if secrets:
+        for key, value in secrets.items():
+            os.environ[key] = value
+        print("Secrets loaded")
 
 
 def handle_secrets(stack):
@@ -88,7 +94,7 @@ def handle_secrets(stack):
             create_secret_file(secrets)
             load_secrets_file()
 
-            print(f"Secrets Fetched")
+            print(f"Secrets Resolved")
         except Exception as e:
             print("secrets not loaded:" + str(e))
     else:
