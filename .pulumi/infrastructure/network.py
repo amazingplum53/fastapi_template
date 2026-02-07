@@ -202,7 +202,7 @@ def alb(stage: str, project_name: str, subnet_ids: pulumi.Input[list[str]]):
     )
 
     lb = aws.lb.LoadBalancer(
-        f"{stage}-alb-{project_name}",
+        f"{stage}-alb-{project_name}".replace("_", ""),
         internal=False,
         load_balancer_type="application",
         security_groups=[alb_sg.id],
@@ -210,7 +210,7 @@ def alb(stage: str, project_name: str, subnet_ids: pulumi.Input[list[str]]):
     )
 
     tg = aws.lb.TargetGroup(
-        f"{stage}-tg-{project_name}",
+        f"{stage}-tg-{project_name}".replace("_", "-"),
         port=8000,
         protocol="HTTP",
         target_type="ip",

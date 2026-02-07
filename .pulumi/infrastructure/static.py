@@ -9,8 +9,8 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     # 1) Core bucket – ⚠️ NO SSE here
     # ------------------------------------------------------------------ #
     bucket = aws.s3.BucketV2(
-        f"{stage}-bucket-{project_name}",
-        bucket=f"{stage}-bucket-{project_name}",
+        f"{stage}-bucket-{project_name}".replace("_", "-"),
+        bucket=f"{stage}-bucket-{project_name}".replace("_", "-"),
         force_destroy=True,
     )
 
@@ -18,7 +18,7 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     # 2) Server-side encryption (must be a separate resource)
     # ------------------------------------------------------------------ #
     aws.s3.BucketServerSideEncryptionConfigurationV2(
-        f"{stage}-bucket-sse-{project_name}",
+        f"{stage}-bucket-sse-{project_name}".replace("_", "-"),
         bucket=bucket.bucket,
         rules=[
             aws.s3.BucketServerSideEncryptionConfigurationV2RuleArgs(
@@ -34,7 +34,7 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     # 3) Static-website config
     # ------------------------------------------------------------------ #
     aws.s3.BucketWebsiteConfigurationV2(
-        f"{stage}-website-config-{project_name}",
+        f"{stage}-website-config-{project_name}".replace("_", "-"),
         bucket=bucket.bucket,
         index_document={"suffix": "index.html"},
         error_document={"key": "404.html"},
@@ -44,7 +44,7 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     # 4) Public-access settings
     # ------------------------------------------------------------------ #
     aws.s3.BucketPublicAccessBlock(
-        f"{stage}-bucket-public-access-block-{project_name}",
+        f"{stage}-bucket-public-access-block-{project_name}".replace("_", "-"),
         bucket=bucket.bucket,
         block_public_acls=False,
         block_public_policy=False,
@@ -53,7 +53,7 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     )
 
     aws.s3.BucketPolicy(
-        f"{stage}-bucket-policy-{project_name}",
+        f"{stage}-bucket-policy-{project_name}".replace("_", "-"),
         bucket=bucket.bucket,
         policy=bucket.bucket.apply(
             lambda name: json.dumps({
