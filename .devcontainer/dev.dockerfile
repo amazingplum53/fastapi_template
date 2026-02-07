@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.12
 
 WORKDIR /workspace/fastapi_template/
 
@@ -6,7 +6,7 @@ COPY dev.requirements.txt /tmp/dev.requirements.txt
 
 RUN apt-get update
 
-RUN apt-get install -y curl git docker.io awscli less
+RUN apt-get install -y curl git docker.io awscli less make
 
 RUN curl -fsSL https://get.pulumi.com | sh
 

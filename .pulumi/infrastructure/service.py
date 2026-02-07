@@ -169,7 +169,7 @@ def ecr(
     auth = aws.ecr.get_authorization_token()
 
     image = docker.Image(
-        f"{stage}-{project_name}-image",
+        f"{stage}-{project_name}-image".replace("_", "-"),
         image_name = repo.repository_url.apply(lambda url: f"{url}:{image_tag}"),
         build = {                       # ← plain Python dict
             "context"   : project_path,

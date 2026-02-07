@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.12-slim
 
 ENV BASEDIR="/server/" 
 ENV PROJECT_NAME="fastapi_template" 
