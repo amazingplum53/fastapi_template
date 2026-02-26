@@ -1,24 +1,25 @@
 
 from pathlib import Path
 import os
-import json
+import ast
 
 PROJECT_NAME = os.environ['PROJECT_NAME']
 BASE_DIR = f'/server/{PROJECT_NAME}'
-
 STACK = os.getenv("STACK", "local")
 
-# Import variables from json file
-with open(f"{BASE_DIR}/{PROJECT_NAME}/env/{STACK}.json", "r") as f:
-    ENV_VARIABLES = json.loads(f.read())
+ALLOWED_HOSTS = ast.literal_eval(os.environ["ALLOWED_HOSTS"])
+PROTOCOL = os.environ["PROTOCOL"]
 
-    for name, value in ENV_VARIABLES.items():
-        globals()[name] = value
+DEBUG = os.environ["PROTOCOL"]
 
 CSRF_TRUSTED_ORIGINS = [
     PROTOCOL + "://" + domain
     for domain in ALLOWED_HOSTS
 ]
 
-if STATIC_URL is None:
+if "STATIC_URL" in os.environ and os.environ["STATIC_URL"] is not None:
+    STATIC_URL = os.environ["STATIC_URL"]
+else:
     STATIC_URL = "/static"
+
+    

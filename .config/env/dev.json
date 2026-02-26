@@ -3,5 +3,10 @@
     "ALLOWED_HOSTS": ["dev.matthewhill.click"],
     "DEBUG": false,
     "STATIC_URL": "https://static.dev.matthewhill.click/",
-    "PROTOCOL": "https"
+    "PROTOCOL": "https",
+    "DATABASE":{
+        "NAME": "dev_db",
+        "PORT": "5432",
+        "USERNAME": "dev_db"
+    }
 }

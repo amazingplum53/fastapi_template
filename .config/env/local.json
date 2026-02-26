@@ -1,0 +1,11 @@
+{
+    "DOMAIN_NAME": "localhost",
+    "ALLOWED_HOSTS": ["localhost", "127.0.0.1"],
+    "DEBUG": true,
+    "PROTOCOL": "http",
+    "DATABASE":{
+        "NAME": "OOO",
+        "PORT": "5432",
+        "USERNAME": "local_db"
+    }
+}

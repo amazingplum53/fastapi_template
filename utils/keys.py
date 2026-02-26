@@ -6,7 +6,7 @@ import os
 SECRETS_FILE_NAME = "secrets"
 AWS_SECRET_NAME = "prod-secrets"
 PROJECT_NAME = os.getenv("PROJECT_NAME")
-FILE_PATH = f"/server/{PROJECT_NAME}/{PROJECT_NAME}/secret"
+FILE_PATH = f"/server/{PROJECT_NAME}/.config/secret"
 
 
 def get_secret(secret_name: str = AWS_SECRET_NAME) -> str:
