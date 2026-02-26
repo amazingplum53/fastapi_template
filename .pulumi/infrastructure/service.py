@@ -5,24 +5,14 @@ import json
 from pulumi import Output
 from typing import List, Dict, Tuple
 
-
-
-def ecs(
+def task_security_group(
     stage: str,
     project_name: str,
-    cluster: aws.ecs.Cluster,
     vpc: aws.ec2.Vpc,
-    subnets: List[str],
-    target_group: aws.lb.TargetGroup,
-    image: docker.Image,
     alb_sg: aws.ec2.SecurityGroup,
-) -> Tuple[str, pulumi.Resource]:
-    """
-    Registers an ECS Task Definition & Fargate Service running `image`
-    behind the given ALB target_group.
-    """
+) -> aws.ec2.SecurityGroup:
 
-    task_sg = aws.ec2.SecurityGroup(
+    return aws.ec2.SecurityGroup(
         f"{stage}-task-sg-{project_name}",
         vpc_id=vpc.id,
         description="Tasks - allow 8000 from ALB",
@@ -33,6 +23,23 @@ def ecs(
             protocol="-1", from_port=0, to_port=0, cidr_blocks=["0.0.0.0/0"],
         )],
     )
+
+def ecs(
+    stage: str,
+    project_name: str,
+    cluster: aws.ecs.Cluster,
+    vpc: aws.ec2.Vpc,
+    subnets: List[Output[str]],
+    target_group: aws.lb.TargetGroup,
+    image: docker.Image,
+    alb_sg: aws.ec2.SecurityGroup,
+    task_security_group: aws.ec2.SecurityGroup,
+    db_host_name: Output[str]
+) -> Tuple[aws.iam.Role, aws.ecs.TaskDefinition, aws.ecs.Service]:
+    """
+    Registers an ECS Task Definition & Fargate Service running `image`
+    behind the given ALB target_group.
+    """
 
     log_group = aws.cloudwatch.LogGroup(
         f"{stage}-lg-{project_name}",
@@ -61,7 +68,11 @@ def ecs(
 
     # 2) Build container_definitions JSON once 'image' resolves
     container_name = f"{stage}-server-{project_name}"
-    all_inputs = Output.all(image.repo_digest, log_group.name)
+    all_inputs = Output.all(
+        image.repo_digest,
+        log_group.name,
+        db_host_name,
+    )
     container_defs = all_inputs.apply(lambda args: json.dumps([{
         "name":          container_name,
         "image":         args[0],
@@ -69,6 +80,7 @@ def ecs(
         "essential":     True,
         "environment":   [
             { "name": "STACK", "value": stage },
+            {"name":"DB_HOST","value": db_host_name}
         ],
         "logConfiguration": {
             "logDriver": "awslogs",
@@ -103,7 +115,7 @@ def ecs(
         network_configuration = aws.ecs.ServiceNetworkConfigurationArgs(
             assign_public_ip = False,
             subnets          = subnets,
-            security_groups  = [task_sg.id],
+            security_groups  = [task_security_group.id],
         ),
         load_balancers=[aws.ecs.ServiceLoadBalancerArgs(
             target_group_arn = target_group.arn,

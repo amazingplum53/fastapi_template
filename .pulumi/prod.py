@@ -2,11 +2,15 @@
 
 import pulumi_aws as aws
 from infrastructure import static, network, service
+from infrastructure.database import aurora_serverless_v2 as database
 import pulumi 
+from fastapi_template.env.variables import load_variables
 
 def deploy(stage: str, project_name: str):
 
     PROJECT_ROOT = f"/workspace/{project_name}/"
+
+    load_variables(PROJECT_ROOT, project_name, stage)
 
     VPC, PUBLIC_SUBNETS, PRIVATE_SUBNETS = network.vpc(stage, project_name)
 
@@ -27,6 +31,21 @@ def deploy(stage: str, project_name: str):
 
     CLUSTER = aws.ecs.Cluster(f"{stage}-cluster-{project_name}") 
 
+    TASK_SECURITY_GROUP = service.task_security_group(
+        stage,
+        project_name,
+        VPC,
+        SG_GROUP,
+    )
+
+    DB_CLUSTER, DB_WRITER = database(
+        stage,
+        project_name,
+        VPC,
+        PRIVATE_SUBNET_IDS,
+        allowed_security_group_ids = [TASK_SECURITY_GROUP.id],
+    )
+
     ECR, IMAGE = service.ecr(stage, project_name, PROJECT_ROOT)
 
     TASK_EXE_ROLE, TASK_DEF, CONTAINER_SERVICE = service.ecs(
@@ -38,5 +57,6 @@ def deploy(stage: str, project_name: str):
         TARGET_GROUP, 
         IMAGE,
         SG_GROUP,
+        DB_CLUSTER.endpoint,
     )
 
