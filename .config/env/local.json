@@ -4,7 +4,7 @@
     "DEBUG": true,
     "PROTOCOL": "http",
     "DATABASE":{
-        "NAME": "OOO",
+        "NAME": "local_db",
         "PORT": "5432",
         "USERNAME": "local_db"
     }

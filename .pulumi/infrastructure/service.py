@@ -80,7 +80,7 @@ def ecs(
         "essential":     True,
         "environment":   [
             { "name": "STACK", "value": stage },
-            {"name":"DB_HOST","value": db_host_name}
+            {"name":"DB_HOST","value": args[2]}
         ],
         "logConfiguration": {
             "logDriver": "awslogs",

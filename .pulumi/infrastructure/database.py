@@ -4,9 +4,8 @@ import pulumi
 import pulumi_aws as aws
 import os
 import ast
-from pulumi import Output
+from pulumi import Output, Input
 from typing import List, Optional, Tuple
-from secret.keys import get_secret
 
 def aurora_serverless_v2(
     stage: str,
@@ -20,8 +19,7 @@ def aurora_serverless_v2(
     max_acu: float = 1.0,
 ) -> Tuple[aws.rds.Cluster, aws.rds.ClusterInstance]:
     """
-    Creates Aurora Serverless v2 and writes DB_* keys into Secrets Manager secret named == stage.
-    This matches your runtime loader which calls get_secret(secret_name=stack).
+    Creates Aurora Serverless v2
     """
     
     cfg = pulumi.Config("db")
@@ -57,7 +55,7 @@ def aurora_serverless_v2(
         engine=engine,
         engine_version=engine_version,
         database_name=DATABASE["NAME"],
-        master_username=os.environ["DB_USERNAME"],
+        master_username=DATABASE["USERNAME"],
         master_password=password,
         db_subnet_group_name=subnet_group.name,
         vpc_security_group_ids=[db_sg.id],

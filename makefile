@@ -15,7 +15,7 @@ restart:
 	docker restart server
 
 deploy:
-	source $(PROJECT_NAME)/secret/secrets.source && \
+	source .config/secret/secrets.source && \
 	pulumi config set --cwd ./.pulumi/ --stack $(STACK) --secret db:password "$$DB_PASSWORD"; \
 	pulumi up --cwd ./.pulumi/ --stack $(STACK) --yes
 

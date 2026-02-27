@@ -1,9 +1,12 @@
 import json
 import os
 
-def load_variables(stack):
+def load_variables(stack, container_name = 'server'):
 
-    file_path = f"/server/{os.environ["PROJECT_NAME"]}/.config/env"
+    if container_name == 'server':
+        file_path = f"/server/{os.environ["PROJECT_NAME"]}/.config/env"
+    else:
+        file_path = f"/workspace/{os.environ["PROJECT_NAME"]}/.config/env"
 
     # Import variables from json file
     with open(f"{file_path}/{stack}.json", "r") as f:
