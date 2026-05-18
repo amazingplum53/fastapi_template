@@ -1,19 +1,27 @@
 SHELL := /bin/bash
 PROJECT_NAME = fastapi_template
-STACK ?= prod
 
+
+CONTAINER ?= server
 ssh:
-	docker exec -it server bash
+	docker exec -it $(CONTAINER) bash
 
 shell:
-	docker exec -it server python3 manage.py shell
+	docker exec -it $(CONTAINER) python3 manage.py shell
 
 logs:
-	docker logs --follow server
+	docker logs --follow $(CONTAINER)
 
 restart:
-	docker restart server
+	source .config/secret/secrets.source && \
+	docker restart $(CONTAINER)
 
+up:
+	source .config/secret/secrets.source && \
+	docker compose up
+
+
+STACK ?= prod
 deploy:
 	source .config/secret/secrets.source && \
 	pulumi config set --cwd ./.pulumi/ --stack $(STACK) --secret db:password "$$DB_PASSWORD"; \
