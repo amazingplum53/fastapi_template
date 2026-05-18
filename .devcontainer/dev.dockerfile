@@ -6,7 +6,7 @@ COPY dev.requirements.txt /tmp/dev.requirements.txt
 
 RUN apt-get update
 
-RUN apt-get install -y curl git docker.io awscli less make
+RUN apt-get install -y curl git docker.io docker-compose awscli less make 
 
 RUN curl -fsSL https://get.pulumi.com | sh
 
