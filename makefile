@@ -18,7 +18,7 @@ restart:
 
 up:
 	source .config/secret/secrets.source && \
-	docker compose up
+	docker compose -f .devcontainer/docker-compose.yml up
 
 
 STACK ?= prod
