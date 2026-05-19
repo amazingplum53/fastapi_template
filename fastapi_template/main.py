@@ -7,7 +7,7 @@ from pathlib import Path
 
 from middleware import MIDDLEWARE
 import settings
-
+from sqlalchemy import create_engine, text
 
 app = FastAPI(
     middleware=MIDDLEWARE,
@@ -25,7 +25,13 @@ if settings.STATIC_URL == "/static":
 
 @app.get("/")
 async def root():
-    return {"ok": True}
+
+    engine = create_engine(settings.DATABASE["URL"], pool_pre_ping=True)
+
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT 1")).scalar_one()
+
+    return {"ok": True, "result": result}
 
 @app.get("/health")
 async def health():
