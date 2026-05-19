@@ -2,6 +2,8 @@
 from pathlib import Path
 import os
 import ast
+from sqlalchemy.engine import URL
+
 
 PROJECT_NAME = os.environ['PROJECT_NAME']
 BASE_DIR = f'/server/{PROJECT_NAME}'
@@ -22,4 +24,15 @@ if "STATIC_URL" in os.environ and os.environ["STATIC_URL"] is not None:
 else:
     STATIC_URL = "/static"
 
-    
+DATABASE = ast.literal_eval(os.environ["DATABASE"])
+
+db_host = os.environ.get("DB_HOST", DATABASE["HOST"])
+
+DATABASE["URL"] = str(URL.create(
+    drivername="postgresql+psycopg",
+    username=DATABASE["USERNAME"],
+    password=os.environ["DB_PASSWORD"],
+    host=db_host,
+    port=DATABASE["PORT"],
+    database=DATABASE["NAME"],
+))
