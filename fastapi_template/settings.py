@@ -27,11 +27,12 @@ else:
 DATABASE = ast.literal_eval(os.environ["DATABASE"])
 
 db_host = os.environ.get("DB_HOST", DATABASE["HOST"])
+password = os.environ.get("DB_PASSWORD", DATABASE["PASSWORD"])
 
 DATABASE["URL"] = str(URL.create(
     drivername="postgresql+psycopg",
     username=DATABASE["USERNAME"],
-    password=os.environ["DB_PASSWORD"],
+    password=password,
     host=db_host,
     port=DATABASE["PORT"],
     database=DATABASE["NAME"],

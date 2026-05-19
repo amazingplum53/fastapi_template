@@ -7,6 +7,7 @@
         "NAME": "local_db",
         "PORT": "5432",
         "USERNAME": "local_db",
-        "HOST": "database"
+        "HOST": "database",
+        "PASSWORD": "LOCAL-DEVELOPMENT"
     }
 }
