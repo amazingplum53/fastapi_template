@@ -2,7 +2,7 @@
 services:
   dev:
     depends_on:
-      django-server:
+      server:
         condition: service_started
     container_name: dev
     build:
@@ -19,8 +19,7 @@ services:
     privileged: true
     command: ["bash", "-lc", "sleep infinity"]
 
-  django-server:
-    container_name: server
+  server:
     build:
       dockerfile: .devcontainer/server.dockerfile
       context: ./..
@@ -35,7 +34,6 @@ services:
 
   database:
     image: postgres:16
-    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: local_db

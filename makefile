@@ -1,25 +1,21 @@
-SHELL := /bin/bash
-PROJECT_NAME = fastapi_template
+COMPOSE = docker compose -p fastapi_template_devcontainer -f .devcontainer/compose.yml
+SERVICE ?= server
+DB_SERVICE ?= database
 
 
-CONTAINER ?= server
 ssh:
-	docker exec -it $(CONTAINER) bash
-
-shell:
-	docker exec -it $(CONTAINER) python3 manage.py shell
+	$(COMPOSE) exec $(SERVICE) bash
 
 logs:
-	docker logs --follow $(CONTAINER)
+	$(COMPOSE) logs --follow $(SERVICE)
 
 restart:
-	source .config/secret/secrets.source && \
-	docker restart $(CONTAINER)
+	$(COMPOSE) restart $(SERVICE)
 
 up:
-	docker rm -f django-server database || true
+	docker rm -f server database || true
 	source .config/secret/secrets.source && \
-	docker compose -f .devcontainer/compose.yml up django-server database
+	docker compose -f .devcontainer/compose.yml up server database
 
 
 STACK ?= prod
