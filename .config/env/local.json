@@ -6,6 +6,7 @@
     "DATABASE":{
         "NAME": "local_db",
         "PORT": "5432",
-        "USERNAME": "local_db"
+        "USERNAME": "local_db",
+        "HOST": "database"
     }
 }

@@ -38,8 +38,8 @@ services:
     container_name: postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: app
-      POSTGRES_USER: app
+      POSTGRES_DB: local_db
+      POSTGRES_USER: local_db
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"  
