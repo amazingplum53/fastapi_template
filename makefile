@@ -17,8 +17,9 @@ restart:
 	docker restart $(CONTAINER)
 
 up:
+	docker rm -f django-server database || true
 	source .config/secret/secrets.source && \
-	docker compose -f .devcontainer/compose.yml up
+	docker compose -f .devcontainer/compose.yml up django-server database
 
 
 STACK ?= prod
