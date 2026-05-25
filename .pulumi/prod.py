@@ -18,7 +18,15 @@ def deploy(stage: str, project_name: str):
 
     BUCKET = static.bucket(stage, project_name)
 
-    CDN = static.cdn(stage, project_name, BUCKET, network.DOMAIN_NAME, CERTIFICATE)
+    CDN = static.cdn(
+        stage,
+        project_name,
+        BUCKET,
+        network.DOMAIN_NAME,
+        CERTIFICATE,
+    )
+
+    static.allow_cloudfront_access(stage, project_name, BUCKET, CDN)
 
     network.cdn_alias_record(stage, project_name, CDN)
 

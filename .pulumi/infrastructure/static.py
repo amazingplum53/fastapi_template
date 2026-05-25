@@ -31,41 +31,15 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
     )
 
     # ------------------------------------------------------------------ #
-    # 3) Static-website config
-    # ------------------------------------------------------------------ #
-    aws.s3.BucketWebsiteConfigurationV2(
-        f"{stage}-website-config-{project_name}".replace("_", "-"),
-        bucket=bucket.bucket,
-        index_document={"suffix": "index.html"},
-        error_document={"key": "404.html"},
-    )
-
-    # ------------------------------------------------------------------ #
     # 4) Public-access settings
     # ------------------------------------------------------------------ #
     aws.s3.BucketPublicAccessBlock(
         f"{stage}-bucket-public-access-block-{project_name}".replace("_", "-"),
         bucket=bucket.bucket,
-        block_public_acls=False,
-        block_public_policy=False,
-        ignore_public_acls=False,
-        restrict_public_buckets=False,
-    )
-
-    aws.s3.BucketPolicy(
-        f"{stage}-bucket-policy-{project_name}".replace("_", "-"),
-        bucket=bucket.bucket,
-        policy=bucket.bucket.apply(
-            lambda name: json.dumps({
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": "s3:GetObject",
-                    "Resource": f"arn:aws:s3:::{name}/*",
-                }],
-            })
-        ),
+        block_public_acls=True,
+        block_public_policy=True,
+        ignore_public_acls=True,
+        restrict_public_buckets=True,
     )
 
     # ------------------------------------------------------------------ #
@@ -87,15 +61,16 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
 
     return bucket
 
-def cdn(stage: str, project_name: str, bucket: aws.s3.Bucket, domain_name: str, cert: aws.acm.Certificate) -> aws.cloudfront.Distribution:
+def cdn(stage: str, project_name: str, bucket: aws.s3.BucketV2, domain_name: str, cert: aws.acm.Certificate) -> aws.cloudfront.Distribution:
     # 1) Create a us-east-1 provider for CloudFront (CloudFront certificates must live in us-east-1)
     us_east_1 = aws.Provider(f"{stage}-us-east-1", region="us-east-1")
 
-    # 2) Origin Access Identity for S3, using the us-east-1 provider
-    oai = aws.cloudfront.OriginAccessIdentity(
-        f"{stage}-cdn-oai",
-        comment=f"Access identity for {stage}-{project_name} CDN",
-        opts=pulumi.ResourceOptions(provider=us_east_1)
+    oac = aws.cloudfront.OriginAccessControl(
+        f"{stage}-cdn-oac-{project_name}".replace("_", "-"),
+        description=f"OAC for {stage}-{project_name}",
+        origin_access_control_origin_type="s3",
+        signing_behavior="always",
+        signing_protocol="sigv4",
     )
 
     # 3) Build the CloudFront Distribution using the us-east-1 provider
@@ -104,9 +79,7 @@ def cdn(stage: str, project_name: str, bucket: aws.s3.Bucket, domain_name: str, 
         origins=[aws.cloudfront.DistributionOriginArgs(
             domain_name=bucket.bucket_regional_domain_name,
             origin_id=bucket.arn,
-            s3_origin_config=aws.cloudfront.DistributionOriginS3OriginConfigArgs(
-                origin_access_identity=oai.cloudfront_access_identity_path,
-            ),
+            origin_access_control_id=oac.id,
         )],
         enabled=True,
         default_root_object="index.html",
@@ -138,3 +111,33 @@ def cdn(stage: str, project_name: str, bucket: aws.s3.Bucket, domain_name: str, 
 
     pulumi.export(f"{stage}-cdn_domain_name", distribution.domain_name)
     return distribution
+
+
+def allow_cloudfront_access(
+    stage: str,
+    project_name: str,
+    bucket: aws.s3.BucketV2,
+    distribution: aws.cloudfront.Distribution,
+):
+    aws.s3.BucketPolicy(
+        f"{stage}-bucket-policy-{project_name}".replace("_", "-"),
+        bucket=bucket.bucket,
+        policy=pulumi.Output.all(bucket.arn, distribution.arn).apply(
+            lambda args: json.dumps({
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "cloudfront.amazonaws.com"
+                    },
+                    "Action": "s3:GetObject",
+                    "Resource": f"{args[0]}/*",
+                    "Condition": {
+                        "StringEquals": {
+                            "AWS:SourceArn": args[1]
+                        }
+                    },
+                }],
+            })
+        ),
+    )
