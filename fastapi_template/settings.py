@@ -26,12 +26,13 @@ else:
 
 DATABASE = ast.literal_eval(os.environ["DATABASE"])
 
-db_host = os.environ.get("DB_HOST", DATABASE["HOST"])
+if "HOST" not in DATABASE:
+    DATABASE["HOST"] = os.environ.get("DB_HOST")
 
 DATABASE["URL"] = URL.create(
     drivername="postgresql+psycopg",
     username=DATABASE["USERNAME"],
-    host=db_host,
+    host=DATABASE["HOST"],
     port=DATABASE["PORT"],
     database=DATABASE["NAME"],
     password=os.environ["DB_PASSWORD"] 
