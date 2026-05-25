@@ -61,9 +61,7 @@ def bucket(stage: str, project_name: str) -> aws.s3.BucketV2:
 
     return bucket
 
-def cdn(stage: str, project_name: str, bucket: aws.s3.BucketV2, domain_name: str, cert: aws.acm.Certificate) -> aws.cloudfront.Distribution:
-    # 1) Create a us-east-1 provider for CloudFront (CloudFront certificates must live in us-east-1)
-    us_east_1 = aws.Provider(f"{stage}-us-east-1", region="us-east-1")
+def cdn(stage: str, project_name: str, bucket: aws.s3.BucketV2, domain_name: str, cert_arn: pulumi.Input[str]) -> aws.cloudfront.Distribution:
 
     oac = aws.cloudfront.OriginAccessControl(
         f"{stage}-cdn-oac-{project_name}".replace("_", "-"),
@@ -103,10 +101,10 @@ def cdn(stage: str, project_name: str, bucket: aws.s3.BucketV2, domain_name: str
         ),
         aliases=[f"static.{domain_name}"],
         viewer_certificate=aws.cloudfront.DistributionViewerCertificateArgs(
-            acm_certificate_arn=cert.arn,  # Certificate ARN must be from us-east-1
+            acm_certificate_arn=cert_arn,
             ssl_support_method="sni-only",
             minimum_protocol_version="TLSv1.2_2021",
-        ),
+        )
     )
 
     pulumi.export(f"{stage}-cdn_domain_name", distribution.domain_name)

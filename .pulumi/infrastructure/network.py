@@ -155,11 +155,14 @@ def cdn_alias_record(stage: str, project_name, cdn: aws.cloudfront.Distribution)
 
 
 def cdn_certificate(stage: str, project_name: str):
-    """us-east-1 cert for CloudFront (static sub-domain only)."""
-    us_east_1 = aws.Provider("usEast1", region="us-east-1")
+    """us-east-1 cert for CloudFront static sub-domain."""
+    us_east_1 = aws.Provider(
+        f"{stage}-us-east-1",
+        region="us-east-1",
+    )
 
     cert = aws.acm.Certificate(
-        f"{stage}-cf-cert-{project_name}",
+        f"{stage}-cf-cert-{project_name}".replace("_", "-"),
         domain_name=f"static.{DOMAIN_NAME}",
         validation_method="DNS",
         opts=pulumi.ResourceOptions(provider=us_east_1),
@@ -168,23 +171,23 @@ def cdn_certificate(stage: str, project_name: str):
     zone = aws.route53.get_zone(name=DOMAIN_NAME)
 
     val = aws.route53.Record(
-        f"{stage}-cf-cert-val-{project_name}",
+        f"{stage}-cf-cert-val-{project_name}".replace("_", "-"),
         zone_id=zone.zone_id,
         name=cert.domain_validation_options[0].resource_record_name,
         type=cert.domain_validation_options[0].resource_record_type,
         records=[cert.domain_validation_options[0].resource_record_value],
         ttl=60,
-        opts=pulumi.ResourceOptions(provider=us_east_1),
+        allow_overwrite=True,
     )
 
-    aws.acm.CertificateValidation(
-        f"{stage}-cf-cert-validation-{project_name}",
+    cert_validation = aws.acm.CertificateValidation(
+        f"{stage}-cf-cert-validation-{project_name}".replace("_", "-"),
         certificate_arn=cert.arn,
         validation_record_fqdns=[val.fqdn],
         opts=pulumi.ResourceOptions(provider=us_east_1),
     )
 
-    return cert
+    return cert_validation.certificate_arn
 
 
 def alb(stage: str, project_name: str, subnet_ids: pulumi.Input[list[str]]):

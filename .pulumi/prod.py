@@ -14,7 +14,7 @@ def deploy(stage: str, project_name: str):
     PUBLIC_SUBNET_IDS = [s.id for s in PUBLIC_SUBNETS]
     PRIVATE_SUBNET_IDS = [s.id for s in PRIVATE_SUBNETS]
 
-    CERTIFICATE = network.cdn_certificate(stage, project_name)
+    CERTIFICATE_ARN = network.cdn_certificate(stage, project_name)
 
     BUCKET = static.bucket(stage, project_name)
 
@@ -23,7 +23,7 @@ def deploy(stage: str, project_name: str):
         project_name,
         BUCKET,
         network.DOMAIN_NAME,
-        CERTIFICATE,
+        CERTIFICATE_ARN,
     )
 
     static.allow_cloudfront_access(stage, project_name, BUCKET, CDN)
