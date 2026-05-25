@@ -1,19 +1,8 @@
-import os
-import sys
 
-STACK = os.getenv("STACK", "local")
-print(f"Using {STACK} env file")
+from fastapi_template.asgi import bootstrap
 
-os.environ["PROJECT_NAME"] = "fastapi_template"
-
-sys.path.append(f"/server/{os.environ["PROJECT_NAME"]}/")
-
-from utils.keys import handle_secrets
-from utils.variables import load_variables
-
-load_variables(STACK)
-
-handle_secrets(STACK)
+bootstrap()
 
 from fastapi_template import settings
 
+print(settings.DATABASE)

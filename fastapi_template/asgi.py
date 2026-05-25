@@ -1,21 +1,23 @@
 from multiprocessing import cpu_count
-import os
 import uvicorn
-import sys
 
-STACK = os.getenv("STACK", "local")
-print(f"Using {STACK} env file")
 
-os.environ["PROJECT_NAME"] = "fastapi_template"
+def bootstrap():
 
-sys.path.append(f"/server/{os.environ["PROJECT_NAME"]}/")
+    import sys
+    import os
 
-from utils.keys import handle_secrets
-from utils.variables import load_variables
+    STACK = os.getenv("STACK", "local")
+    print(f"Using {STACK} env file")
 
-load_variables(STACK)
+    from utils.keys import handle_secrets
+    from utils.variables import load_variables
 
-handle_secrets(STACK)
+    load_variables(STACK)
+
+    handle_secrets(STACK)
+
+bootstrap()
 
 import settings
 
