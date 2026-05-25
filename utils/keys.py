@@ -47,6 +47,8 @@ def create_secret_file(secret_json: str, file_name: str = SECRETS_FILE_NAME):
         print("Secret is not a valid JSON string.")
         return
 
+    os.makedirs(FILE_PATH, exist_ok=True)
+
     with open(f"{FILE_PATH}/{file_name}.json", 'w') as f:
         json.dump(secrets, f, indent=4)
 
