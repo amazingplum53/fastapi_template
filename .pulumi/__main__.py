@@ -9,14 +9,10 @@ import os
 config = pulumi.Config()
 stack = pulumi.get_stack()
 
-os.environ['PROJECT_NAME'] = "fastapi_template"
-
 stack_main = {
     "prod": prod,
     "dev": dev,
 }.get(stack)
-
-sys.path.append(f"/workspace/{os.environ['PROJECT_NAME']}/")
 
 from utils.variables import load_variables
 

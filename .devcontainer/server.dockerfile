@@ -1,11 +1,13 @@
 FROM python:3.12-slim
 
-ENV BASEDIR="/server/" 
+ENV BASEDIR="/server" 
 ENV PROJECT_NAME="fastapi_template" 
 
-RUN mkdir $BASEDIR $BASEDIR/$PROJECT_NAME
+RUN mkdir -p $BASEDIR $BASEDIR/$PROJECT_NAME
 
 WORKDIR $BASEDIR/$PROJECT_NAME
+
+RUN echo "$BASEDIR/$PROJECT_NAME" > /usr/local/lib/python3.12/site-packages/project-path.pth
 
 COPY . .
 
