@@ -27,13 +27,14 @@ else:
 DATABASE = ast.literal_eval(os.environ["DATABASE"])
 
 db_host = os.environ.get("DB_HOST", DATABASE["HOST"])
-password = os.environ.get("DB_PASSWORD", DATABASE["PASSWORD"])
 
-DATABASE["URL"] = str(URL.create(
+DATABASE["URL"] = URL.create(
     drivername="postgresql+psycopg",
     username=DATABASE["USERNAME"],
-    password=password,
     host=db_host,
     port=DATABASE["PORT"],
     database=DATABASE["NAME"],
-))
+    password=os.environ["DB_PASSWORD"] 
+    if STACK != "local" 
+    else DATABASE["PASSWORD"],
+)
