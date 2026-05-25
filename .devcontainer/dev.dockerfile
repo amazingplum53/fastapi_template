@@ -1,6 +1,11 @@
 FROM python:3.12
 
-WORKDIR /workspace/fastapi_template/
+ENV BASEDIR="/workspace" 
+ENV PROJECT_NAME="fastapi_template" 
+
+WORKDIR $BASEDIR/$PROJECT_NAME
+
+RUN echo "$BASEDIR/$PROJECT_NAME" > /usr/local/lib/python3.12/site-packages/project-path.pth
 
 COPY dev.requirements.txt /tmp/dev.requirements.txt
 
