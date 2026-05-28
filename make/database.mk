@@ -1,14 +1,11 @@
 config_path := app/database
 
-db_init:
-	$(COMPOSE) exec server alembic init $(config_path)/migrations
-
 db_current:
-	$(COMPOSE) exec server alembic -c $(config_path)/alembic.ini current
+	$(COMPOSE) exec server python -m app.database.commands db_current
 
 db_upgrade:
-	$(COMPOSE) exec server alembic -c $(config_path)/alembic.ini upgrade head
+	$(COMPOSE) exec server python -m app.database.commands db_upgrade
 
-MESSAGE := 
+MESSAGE :=
 db_revision:
-	$(COMPOSE) exec server alembic -c $(config_path)/alembic.ini revision --autogenerate -m "$(MESSAGE)"
+	$(COMPOSE) exec server python -m app.database.commands db_revision "$(MESSAGE)"
