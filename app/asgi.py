@@ -1,25 +1,10 @@
 from multiprocessing import cpu_count
 import uvicorn
-
-
-def bootstrap():
-
-    import sys
-    import os
-
-    STACK = os.getenv("STACK", "local")
-    print(f"Using {STACK} env file")
-
-    from utils.keys import handle_secrets
-    from utils.variables import load_variables
-
-    load_variables(STACK)
-
-    handle_secrets(STACK)
+from bootstrap import bootstrap
 
 bootstrap()
 
-import settings
+from app import settings
 
 no_of_workers = 1 if settings.DEBUG else cpu_count()
 
