@@ -1,9 +1,8 @@
-COMPOSE = docker compose -p fastapi_template_devcontainer -f .devcontainer/compose.yml
+PROJECT_NAME := fastapi_template
+COMPOSE := docker compose -p $(PROJECT_NAME)_devcontainer -f .devcontainer/compose.yml
 SERVICE ?= server
-DB_SERVICE ?= database
 
-
-ssh:
+shell:
 	$(COMPOSE) exec $(SERVICE) bash
 
 logs:
@@ -13,9 +12,8 @@ restart:
 	$(COMPOSE) restart $(SERVICE)
 
 up:
-	docker rm -f server database || true
 	. .config/secret/secrets.source && \
-	docker compose -f .devcontainer/compose.yml up server database
+	$(COMPOSE) up server database
 
 
 STACK ?= prod
