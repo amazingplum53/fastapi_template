@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
 from app.database.connection import SessionFactory
-from app.database.models import User
+from app.auth.models import User
 from utils.user import hash_password, authenticate_user
 
 

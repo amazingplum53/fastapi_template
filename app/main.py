@@ -9,14 +9,14 @@ from middleware import MIDDLEWARE
 import settings
 from sqlalchemy import create_engine, text
 
-from app import auth
+from app.auth.views import router as auth_router
 
 app = FastAPI(
     middleware=MIDDLEWARE,
     debug=settings.DEBUG
 )
 
-app.include_router(auth.router)
+app.include_router(auth_router)
 
 if settings.STATIC_URL == "/static":
     static_dir = Path(settings.BASE_DIR) / "static"

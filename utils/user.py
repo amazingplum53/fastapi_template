@@ -1,16 +1,17 @@
-from pwdlib import PasswordHash
 
 from app.database.connection import SessionFactory
-from app.database.models import User
+from app.auth.models import User
+
+from pwdlib import PasswordHash
+
+password_hash = PasswordHash.recommended()
 
 
 def hash_password(password: str) -> str:
-    password_hash = PasswordHash.recommended()
     return password_hash.hash(password)
 
 
 def verify_password(input_password: str, hashed_password: str) -> str:
-    password_hash = PasswordHash.recommended()
     return password_hash.verify(input_password, hashed_password)
 
 

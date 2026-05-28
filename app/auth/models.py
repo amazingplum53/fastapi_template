@@ -4,7 +4,7 @@ import enum
 from sqlalchemy import Boolean, DateTime, String, func, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .base import Base
+from app.database.base import Base
 
 
 class AuthStatus(enum.StrEnum):

@@ -26,7 +26,8 @@ target_metadata = None
 # ... etc.
 
 
-from app.database.models import Base, User
+from app.database.base import base
+from app.auth.models import User
 
 target_metadata = Base.metadata
 
