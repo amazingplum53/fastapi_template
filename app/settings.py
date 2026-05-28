@@ -39,3 +39,16 @@ DATABASE["URL"] = URL.create(
     if STACK != "local" 
     else DATABASE["PASSWORD"],
 )
+
+DATABASE["TEST_NAME"] = "test__" + DATABASE["NAME"]
+
+DATABASE["TEST_URL"] = URL.create(
+    drivername="postgresql+psycopg",
+    username=DATABASE["USERNAME"],
+    host=DATABASE["HOST"],
+    port=DATABASE["PORT"],
+    database=DATABASE["TEST_NAME"],
+    password=os.environ["DB_PASSWORD"] 
+    if STACK != "local" 
+    else DATABASE["PASSWORD"],
+)
