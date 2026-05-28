@@ -1,8 +1,9 @@
 
+from pwdlib import PasswordHash
+from sqlalchemy.orm import Session
+
 from app.database.connection import SessionFactory
 from app.auth.models import User
-
-from pwdlib import PasswordHash
 
 password_hash = PasswordHash.recommended()
 
@@ -15,11 +16,9 @@ def verify_password(input_password: str, hashed_password: str) -> str:
     return password_hash.verify(input_password, hashed_password)
 
 
-def authenticate_user(email: str, password: str):
+def authenticate_user(email: str, password: str, session: Session):
 
-    db_session = SessionFactory()
-
-    user = db_session.query(User).filter(User.email == email).first()
+    user = session.query(User).filter(User.email == email).first()
 
     if not user:
         return None
