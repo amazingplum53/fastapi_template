@@ -1,8 +1,10 @@
 
-from fastapi_template.asgi import bootstrap
+from app.asgi import bootstrap
 
-bootstrap()
 
-from fastapi_template import settings
+def command():
 
-print(settings.DATABASE)
+    bootstrap()
+
+    from app import settings
+
