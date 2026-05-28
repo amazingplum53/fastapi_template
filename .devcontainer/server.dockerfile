@@ -18,6 +18,6 @@ RUN uv pip install -r .devcontainer/server.requirements.txt --system
 #HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 #CMD curl -f http://localhost:8000/ || exit 1
 
-CMD python "$PROJECT_NAME/asgi.py"
+CMD python "app/asgi.py"
 
 
