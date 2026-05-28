@@ -26,6 +26,18 @@ target_metadata = None
 # ... etc.
 
 
+from app.database.models import Base, User
+
+target_metadata = Base.metadata
+
+from app.settings import DATABASE
+
+config.set_main_option(
+    "sqlalchemy.url",
+    DATABASE["URL"].render_as_string(hide_password=False),
+)
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -78,6 +90,4 @@ else:
     run_migrations_online()
 
 
-from app.database.models import Base, User
 
-target_metadata = Base.metadata
