@@ -5,12 +5,13 @@ from app.database.models import User
 
 
 def hash_password(password: str) -> str:
+    password_hash = PasswordHash.recommended()
     return password_hash.hash(password)
 
 
 def verify_password(input_password: str, hashed_password: str) -> str:
     password_hash = PasswordHash.recommended()
-    return password_hash.verify(password, user.hashed_password)
+    return password_hash.verify(input_password, hashed_password)
 
 
 def authenticate_user(email: str, password: str):
