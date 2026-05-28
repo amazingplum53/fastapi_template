@@ -9,3 +9,6 @@ db_upgrade:
 MESSAGE :=
 db_revision:
 	$(COMPOSE) exec server python -m app.database.commands db_revision "$(MESSAGE)"
+
+db_shell:
+	$(COMPOSE) exec database psql -U local_db
