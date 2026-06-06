@@ -1,7 +1,5 @@
-# app/routes/auth.py
-
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, HTTPException, status, Depends, Form
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -12,21 +10,15 @@ from utils.user import hash_password, authenticate_user
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-class SignupRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
 @router.post("/signup")
-def signup(data: SignupRequest, db_session: Session = Depends(get_db)):
+def signup(
+    email: EmailStr = Form(...),
+    password: str = Form(...),
+    db_session: Session = Depends(get_db),
+):
     existing_user = (
         db_session.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email == email)
         .first()
     )
 
@@ -37,8 +29,8 @@ def signup(data: SignupRequest, db_session: Session = Depends(get_db)):
         )
 
     user = User(
-        email=data.email,
-        hashed_password=hash_password(data.password),
+        email=email,
+        hashed_password=hash_password(password),
     )
 
     db_session.add(user)
@@ -52,8 +44,12 @@ def signup(data: SignupRequest, db_session: Session = Depends(get_db)):
 
 
 @router.post("/login")
-def login(data: LoginRequest, db_session: Session = Depends(get_db)):
-    user = authenticate_user(data.email, data.password, db_session)
+def login(
+    email: EmailStr = Form(...),
+    password: str = Form(...),
+    db_session: Session = Depends(get_db),
+):
+    user = authenticate_user(email, password, db_session)
 
     if not user:
         raise HTTPException(

@@ -9,14 +9,16 @@ from pathlib import Path
 
 from app.middleware import MIDDLEWARE
 from app import settings
-from app.auth.views import router as auth_router
+from app.auth.api import router as auth_api_router
+from app.auth.pages import router as auth_pages_router
 
 app = FastAPI(
     middleware=MIDDLEWARE,
     debug=settings.DEBUG
 )
 
-app.include_router(auth_router)
+app.include_router(auth_api_router)
+app.include_router(auth_pages_router)
 
 if settings.STATIC_URL == "/static":
     static_dir = Path(settings.BASE_DIR) / "static"

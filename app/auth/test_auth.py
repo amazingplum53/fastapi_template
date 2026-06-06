@@ -3,7 +3,7 @@
 def test_signup_creates_user(client):
     response = client.post(
         "/auth/signup",
-        json={
+        data={
             "email": "test@example.com",
             "password": "password123",
         },
@@ -21,7 +21,7 @@ def test_signup_creates_user(client):
 def test_signup_with_existing_email_fails(client):
     client.post(
         "/auth/signup",
-        json={
+        data={
             "email": "duplicate@example.com",
             "password": "password123",
         },
@@ -29,7 +29,7 @@ def test_signup_with_existing_email_fails(client):
 
     response = client.post(
         "/auth/signup",
-        json={
+        data={
             "email": "duplicate@example.com",
             "password": "password123",
         },
@@ -42,7 +42,7 @@ def test_signup_with_existing_email_fails(client):
 def test_login_with_correct_password(client):
     client.post(
         "/auth/signup",
-        json={
+        data={
             "email": "login@example.com",
             "password": "password123",
         },
@@ -50,7 +50,7 @@ def test_login_with_correct_password(client):
 
     response = client.post(
         "/auth/login",
-        json={
+        data={
             "email": "login@example.com",
             "password": "password123",
         },
@@ -71,7 +71,7 @@ def test_login_with_correct_password(client):
 def test_login_with_wrong_password_fails(client):
     client.post(
         "/auth/signup",
-        json={
+        data={
             "email": "wrong-password@example.com",
             "password": "password123",
         },
@@ -79,7 +79,7 @@ def test_login_with_wrong_password_fails(client):
 
     response = client.post(
         "/auth/login",
-        json={
+        data={
             "email": "wrong-password@example.com",
             "password": "wrong",
         },
