@@ -7,6 +7,9 @@ shell:
 logs:
 	$(COMPOSE) logs --follow $(SERVICE)
 
+test:
+	$(COMPOSE) exec $(SERVICE) pytest 
+
 restart:
 	$(COMPOSE) restart $(SERVICE)
 

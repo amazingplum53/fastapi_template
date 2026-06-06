@@ -7,7 +7,7 @@ from starlette.middleware import Middleware
 
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-import settings
+from app import settings
 
 
 MIDDLEWARE = []

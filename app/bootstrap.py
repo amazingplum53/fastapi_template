@@ -11,8 +11,6 @@ def bootstrap():
     STACK = os.getenv("STACK", "local")
     print(f"Using {STACK} env file")
 
-
-
     load_variables(STACK)
 
     handle_secrets(STACK)

@@ -26,17 +26,18 @@ target_metadata = None
 # ... etc.
 
 
-from app.database.base import base
+from app.database.base import Base
 from app.auth.models import User
 
 target_metadata = Base.metadata
 
 from app.settings import DATABASE
 
-config.set_main_option(
-    "sqlalchemy.url",
-    DATABASE["URL"].render_as_string(hide_password=False),
-)
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option(
+        "sqlalchemy.url",
+        DATABASE["TEST_URL"].render_as_string(hide_password=False),
+    )
 
 
 def run_migrations_offline() -> None:

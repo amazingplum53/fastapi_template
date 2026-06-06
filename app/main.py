@@ -3,12 +3,12 @@ from fastapi import FastAPI, status
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
-from pathlib import Path
-
-from middleware import MIDDLEWARE
-import settings
 from sqlalchemy import create_engine, text
 
+from pathlib import Path
+
+from app.middleware import MIDDLEWARE
+from app import settings
 from app.auth.views import router as auth_router
 
 app = FastAPI(
