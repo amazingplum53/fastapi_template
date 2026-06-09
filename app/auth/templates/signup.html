@@ -1,9 +1,7 @@
-<form method="post" action="/auth/signup">
-  <label>Email</label>
-  <input type="email" name="email" required>
+<div
+  id="auth-form"
+  data-mode="Sign up"
+  data-endpoint="/auth/signup"
+></div>
 
-  <label>Password</label>
-  <input type="password" name="password" required>
-
-  <button type="submit">Sign up</button>
-</form>
+<script type="module" src="/static/assets/auth-form.js"></script>

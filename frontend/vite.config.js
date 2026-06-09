@@ -5,13 +5,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        login: "src/auth/login.jsx",
+        auth: "frontend/src/auth.jsx",
       },
       output: {
-        entryFileNames: "assets/[name].js",
+        entryFileNames: "[name].js",
       },
     },
-    outDir: "../static/js",
+    outDir: "static/js",
     emptyOutDir: false,
   },
   plugins: [react()],
