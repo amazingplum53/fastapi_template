@@ -14,16 +14,19 @@ class Login(BaseModel):
     email: EmailStr
     password: str
 
+class Signup(BaseModel):
+    email: EmailStr
+    password: str
+
 
 @router.post("/signup")
 def signup(
-    email: EmailStr = Form(...),
-    password: str = Form(...),
+    data: Signup,
     db_session: Session = Depends(get_db),
 ):
     existing_user = (
         db_session.query(User)
-        .filter(User.email == email)
+        .filter(User.email == data.email)
         .first()
     )
 
@@ -34,8 +37,8 @@ def signup(
         )
 
     user = User(
-        email=email,
-        hashed_password=hash_password(password),
+        email=data.email,
+        hashed_password=hash_password(data.password),
     )
 
     db_session.add(user)

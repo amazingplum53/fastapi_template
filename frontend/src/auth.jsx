@@ -20,7 +20,7 @@ function AuthForm({ mode, endpoint }) {
     });
 
     if (response.ok) {
-      window.location.href = "/";
+      window.location.href = "/auth/success";
       return;
     }
 
