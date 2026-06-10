@@ -1,4 +1,6 @@
 from fastapi import FastAPI, status
+from fastapi import Request, HTTPException
+from fastapi.responses import FileResponse
 
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
@@ -29,17 +31,40 @@ if settings.STATIC_URL == "/static":
     )
 
 
-@app.get("/")
-async def root():
-
-    engine = create_engine(settings.DATABASE["URL"], pool_pre_ping=True)
-
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT 1")).scalar_one()
-
-    return {"ok": True, "result": result}
-
 @app.get("/health")
 async def health():
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-    
+
+
+@app.get("/{path:path}")
+async def frontend(request: Request, path: str):
+
+    FRONTEND_ROUTES = {
+        "/auth": [
+            "/signup",
+            "/login",
+        ],
+    }
+
+    paths = []
+
+    for root_path, path_list in FRONTEND_ROUTES.items():
+        for child_path in path_list:
+            paths.append(f"{root_path}{child_path}")
+
+    if f"/{path}" not in FRONTEND_ROUTES:
+        raise HTTPException(status_code=404)
+
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request},
+    )
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    return FileResponse(
+        settings.BASE_DIR + "/static/404.html",
+        status_code=404,
+        media_type="text/html",
+    )
