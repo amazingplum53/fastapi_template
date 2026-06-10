@@ -12,7 +12,6 @@ from pathlib import Path
 from app.middleware import MIDDLEWARE
 from app import settings
 from app.auth.api import router as auth_api_router
-from app.auth.pages import router as auth_pages_router
 
 app = FastAPI(
     middleware=MIDDLEWARE,
@@ -20,7 +19,6 @@ app = FastAPI(
 )
 
 app.include_router(auth_api_router)
-app.include_router(auth_pages_router)
 
 if settings.STATIC_URL == "/static":
     static_dir = Path(settings.BASE_DIR) / "static"
@@ -52,12 +50,13 @@ async def frontend(request: Request, path: str):
         for child_path in path_list:
             paths.append(f"{root_path}{child_path}")
 
-    if f"/{path}" not in FRONTEND_ROUTES:
+    if f"/{path}" not in paths:
         raise HTTPException(status_code=404)
 
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request},
+    return FileResponse(
+        settings.BASE_DIR + "/app/index.html",
+        status_code=200,
+        media_type="text/html",
     )
 
 
