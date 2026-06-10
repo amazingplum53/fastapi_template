@@ -12,7 +12,7 @@ STACK = os.getenv("STACK", "local")
 ALLOWED_HOSTS = ast.literal_eval(os.environ["ALLOWED_HOSTS"])
 PROTOCOL = os.environ["PROTOCOL"]
 
-DEBUG = os.environ["PROTOCOL"]
+DEBUG = os.environ["DEBUG"]
 
 CSRF_TRUSTED_ORIGINS = [
     PROTOCOL + "://" + domain
