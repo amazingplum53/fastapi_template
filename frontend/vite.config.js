@@ -2,17 +2,19 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  plugins: [react()],
   build: {
+    outDir: "../static/js",
+    emptyOutDir: false,
     rollupOptions: {
       input: {
-        auth: "frontend/src/auth.jsx",
+        app: "src/main.jsx",
       },
       output: {
-        entryFileNames: "[name].js",
+        entryFileNames: "app.js",
+        chunkFileNames: "chunks/[name].js",
+        assetFileNames: "assets/[name].[ext]",
       },
     },
-    outDir: "static/js",
-    emptyOutDir: false,
   },
-  plugins: [react()],
 });

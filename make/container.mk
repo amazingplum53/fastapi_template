@@ -18,6 +18,6 @@ up:
 	$(COMPOSE) up server database
 
 npm_build:
-	npx vite build --config frontend/vite.config.js
+	cd frontend && npx vite build --config vite.config.js
 
 

@@ -1,8 +1,10 @@
+// frontend/src/components/AuthForm.jsx
 import React, { useState } from "react";
-import { createRoot } from "react-dom/client";
+import { Link, useNavigate } from "react-router-dom";
 
-function AuthForm({ mode, endpoint }) {
+export default function AuthForm({ mode, endpoint }) {
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -20,7 +22,7 @@ function AuthForm({ mode, endpoint }) {
     });
 
     if (response.ok) {
-      window.location.href = "/auth/success";
+      navigate("/auth/success");
       return;
     }
 
@@ -41,24 +43,13 @@ function AuthForm({ mode, endpoint }) {
 
       {mode === "Login" ? (
         <p>
-          No account? <a href="/signup">Sign up</a>
+          No account? <Link to="/auth/signup">Sign up</Link>
         </p>
       ) : (
         <p>
-          Already have an account? <a href="/login">Log in</a>
+          Already have an account? <Link to="/auth/login">Log in</Link>
         </p>
       )}
     </form>
-  );
-}
-
-const rootElement = document.getElementById("auth-form");
-
-if (rootElement) {
-  createRoot(rootElement).render(
-    <AuthForm
-      mode={rootElement.dataset.mode}
-      endpoint={rootElement.dataset.endpoint}
-    />
   );
 }
