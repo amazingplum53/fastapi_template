@@ -1,17 +1,20 @@
 
 from pwdlib import PasswordHash
+
 from sqlalchemy.orm import Session
 
-from app.database.connection import SessionFactory
-from app.auth.models import User
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends
 
 import os
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 import jwt
 
-password_hash = PasswordHash.recommended()
+from app.database.connection import SessionFactory
+from app.auth.models import User
 
+password_hash = PasswordHash.recommended()
 
 def hash_password(password: str) -> str:
     return password_hash.hash(password)
@@ -44,7 +47,7 @@ def create_access_token(user_id: UUID):
 
     return jwt.encode(
         {
-            "user_id": str(user_id),
+            "sub": str(user_id),
             "exp": expire,
         }, 
         os.environ["SECRET_KEY"], 
@@ -63,3 +66,22 @@ def decode_access_token(token: str):
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+security = HTTPBearer()
+
+def login_required(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    token = credentials.credentials
+
+    try:
+        payload = decode_access_token(token)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return {
+        "user_id": payload["sub"],
+    }
